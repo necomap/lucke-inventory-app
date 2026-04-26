@@ -1,0 +1,103 @@
+.detailContainer {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.detailLayout {
+  display: grid;
+  grid-template-columns: 350px 1fr;
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+@media (max-width: 800px) {
+  .detailLayout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.detailImage {
+  width: 100%;
+  aspect-ratio: 1/1;
+  object-fit: cover;
+  border-radius: 16px;
+  background: #f1f5f9;
+}
+
+.detailContent {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.infoSection h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.infoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.infoLabel {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.infoValue {
+  font-weight: 600;
+}
+
+.actionPanel {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.stockStatus {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.historyTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.historyTable th, .historyTable td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.typeIn { color: #10b981; font-weight: 700; }
+.typeOut { color: #ef4444; font-weight: 700; }
+
+.valuationBox {
+  padding: 1rem;
+  background: rgba(79, 70, 229, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(79, 70, 229, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.valLabel { font-weight: 600; font-size: 0.9rem; }
+.valAmount { font-weight: 800; font-size: 1.1rem; color: var(--primary-color); }

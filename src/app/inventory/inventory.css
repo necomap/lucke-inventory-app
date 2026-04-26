@@ -1,0 +1,98 @@
+.inventoryHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.searchBar {
+  display: flex;
+  gap: 0.5rem;
+  flex: 1;
+  max-width: 500px;
+}
+
+.inventoryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.itemCard {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s;
+}
+
+.itemCard:hover {
+  transform: translateY(-4px);
+}
+
+.itemImage {
+  width: 100%;
+  aspect-ratio: 16/10;
+  object-fit: cover;
+  background: #f1f5f9;
+}
+
+.itemInfo {
+  padding: 1.25rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.itemName {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.itemTags {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.tag {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 9999px;
+  background: rgba(0,0,0,0.05);
+  color: var(--text-muted);
+}
+
+.stockInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--glass-border);
+}
+
+.stockCount {
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.stockLabel {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.lowStock {
+  color: #ef4444;
+}
+
+.lowStockBadge {
+  background: #fee2e2;
+  color: #ef4444;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
