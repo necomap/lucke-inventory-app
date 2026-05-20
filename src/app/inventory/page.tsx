@@ -58,6 +58,16 @@ export default function InventoryListPage() {
         </div>
       </div>
 
+      <div style={{ margin: '0 0 1.5rem 0', padding: '1rem', background: 'var(--primary-light, #e0e7ff)', border: '1px solid #c7d2fe', borderLeft: '4px solid var(--primary-color, #4f46e5)', borderRadius: '8px', display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+        <AlertCircle size={20} color="var(--primary-color, #4f46e5)" style={{ marginTop: '0.1rem', flexShrink: 0 }} />
+        <div>
+          <strong style={{ color: 'var(--primary-dark, #3730a3)', display: 'block', marginBottom: '0.25rem' }}>HACCPアプリと自動連動中！</strong>
+          <span style={{ fontSize: '0.9rem', color: 'var(--text-color, #334155)', display: 'block' }}>HACCPアプリで納品記録を付けると、こちらの在庫数が自動で加算され、入庫履歴も自動記録されます。納品時の入力はHACCPアプリから行うと便利です。</span>
+          <a href="https://haccp-app-five.vercel.app/login" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.5rem', fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--primary-color, #4f46e5)', textDecoration: 'none' }}>
+            HACCPアプリを開く <Package size={14} />
+          </a>
+        </div>
+      </div>
       {loading ? (
         <div style={{ textAlign: 'center', padding: '3rem' }}>読み込み中...</div>
       ) : filteredItems.length === 0 ? (
