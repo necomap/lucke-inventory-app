@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { db } from '@/lib/firebase';
+import { db, storage } from '@/lib/firebase';
 import { 
   doc, 
   getDoc, 
@@ -38,7 +38,6 @@ import {
   Image as ImageIcon
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-import { db, storage } from '@/lib/firebase';
 import { InventoryItem, StockTransaction } from '@/types/inventory';
 import { useAuth } from '@/context/AuthContext';
 import { useInventorySettings } from '@/hooks/useInventorySettings';
