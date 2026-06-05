@@ -5,8 +5,8 @@ import { useAuth } from '@/context/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { Settings, Bell, Volume2, Smartphone, Calculator, Save, Loader2, CreditCard, Sparkles, CheckCircle } from 'lucide-react';
-import { UserSettings } from '@/types/inventory';
+import { Settings, Bell, Volume2, Smartphone, Calculator, Save, Loader2, CreditCard, Sparkles, CheckCircle, Plus, Trash2, Edit3, MapPin, Factory, Store } from 'lucide-react';
+import { UserSettings, CustomFieldDefinition, WarehouseLocation } from '@/types/inventory';
 import './settings.css';
 
 export default function SettingsPage() {
@@ -21,6 +21,13 @@ export default function SettingsPage() {
     enableVibration: true,
     enableAlerts: true,
     enableHaccpFields: false,
+    customFields: [],
+    locations: [],
+    businessTypes: {
+      manufacturing: false,
+      retail: true
+    },
+    role: 'admin'
   });
 
   useEffect(() => {
@@ -36,6 +43,10 @@ export default function SettingsPage() {
           enableVibration: data.enableVibration ?? true,
           enableAlerts: data.enableAlerts ?? true,
           enableHaccpFields: data.enableHaccpFields ?? false,
+          customFields: data.customFields ?? [],
+          locations: data.locations ?? [],
+          businessTypes: data.businessTypes ?? { manufacturing: false, retail: true },
+          role: data.role ?? 'admin',
         });
       }
       setLoading(false);
@@ -45,6 +56,10 @@ export default function SettingsPage() {
 
   const handleSave = async () => {
     if (!user) return;
+    if (settings.role === 'staff') {
+      alert('一般スタッフは設定を保存できません。');
+      return;
+    }
     setSaving(true);
     try {
       await setDoc(doc(db, 'settings', user.uid), settings);
@@ -55,6 +70,58 @@ export default function SettingsPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleAddCustomField = () => {
+    const newField: CustomFieldDefinition = {
+      id: `cf_${Date.now()}`,
+      name: '新規項目',
+      type: 'text',
+      required: false,
+    };
+    setSettings(prev => ({
+      ...prev,
+      customFields: [...(prev.customFields || []), newField],
+    }));
+  };
+
+  const handleUpdateCustomField = (id: string, updates: Partial<CustomFieldDefinition>) => {
+    setSettings(prev => ({
+      ...prev,
+      customFields: prev.customFields?.map(f => f.id === id ? { ...f, ...updates } : f) || [],
+    }));
+  };
+
+  const handleRemoveCustomField = (id: string) => {
+    setSettings(prev => ({
+      ...prev,
+      customFields: prev.customFields?.filter(f => f.id !== id) || [],
+    }));
+  };
+
+  const handleAddLocation = () => {
+    const newLocation: WarehouseLocation = {
+      id: `loc_${Date.now()}`,
+      name: '新規拠点',
+    };
+    setSettings(prev => ({
+      ...prev,
+      locations: [...(prev.locations || []), newLocation],
+    }));
+  };
+
+  const handleUpdateLocation = (id: string, updates: Partial<WarehouseLocation>) => {
+    setSettings(prev => ({
+      ...prev,
+      locations: prev.locations?.map(l => l.id === id ? { ...l, ...updates } : l) || [],
+    }));
+  };
+
+  const handleRemoveLocation = (id: string) => {
+    setSettings(prev => ({
+      ...prev,
+      locations: prev.locations?.filter(l => l.id !== id) || [],
+    }));
   };
 
   const handleUpgrade = async () => {
@@ -82,9 +149,19 @@ export default function SettingsPage() {
 
   return (
     <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-      <div className="formHeader">
-        <h1>設定</h1>
+      <div className="formHeader" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1>システム設定</h1>
+        <button onClick={handleSave} className="btn btn-primary" disabled={saving || settings.role === 'staff'}>
+          {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
+          設定を保存
+        </button>
       </div>
+
+      {settings.role === 'staff' && (
+        <div style={{ padding: '1rem', background: '#fee2e2', color: '#991b1b', borderRadius: '8px', marginBottom: '1rem' }}>
+          <strong>権限エラー:</strong> 現在「一般スタッフ」権限のため、設定の変更はできません。
+        </div>
+      )}
 
       <div className="glass-panel" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
         
@@ -115,6 +192,73 @@ export default function SettingsPage() {
             ) : (
               <CheckCircle size={32} />
             )}
+          </div>
+        </section>
+
+        <section className="settingsSection">
+          <h2 className="settingsTitle"><Settings size={20} /> ご利用業態</h2>
+          <div className="toggleGroup">
+            <label className="toggleLabel">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <Factory size={18} />
+                <div>
+                  <span style={{ display: 'block' }}>製造業向け機能 (BOM・レシピ連動)</span>
+                  <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>レシピに基づき材料在庫を自動引き落とし</span>
+                </div>
+              </div>
+              <input 
+                type="checkbox" 
+                checked={settings.businessTypes?.manufacturing ?? false} 
+                onChange={(e) => setSettings({...settings, businessTypes: { ...settings.businessTypes, manufacturing: e.target.checked, retail: settings.businessTypes?.retail ?? true }})} 
+              />
+            </label>
+            <label className="toggleLabel">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <Store size={18} />
+                <div>
+                  <span style={{ display: 'block' }}>仕入販売業向け機能</span>
+                  <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>通常の商品入出庫・販売管理</span>
+                </div>
+              </div>
+              <input 
+                type="checkbox" 
+                checked={settings.businessTypes?.retail ?? true} 
+                onChange={(e) => setSettings({...settings, businessTypes: { ...settings.businessTypes, retail: e.target.checked, manufacturing: settings.businessTypes?.manufacturing ?? false }})} 
+              />
+            </label>
+          </div>
+          <p className="helpText" style={{ marginTop: '0.5rem' }}>選択した業態に合わせてアプリのメニューや機能が最適化されます。（両方ONも可能）</p>
+        </section>
+
+        <section className="settingsSection">
+          <h2 className="settingsTitle"><User size={20} /> ユーザー権限管理</h2>
+          <div className="radioGroup">
+            <label className="radioLabel">
+              <input 
+                type="radio" 
+                name="role" 
+                value="admin"
+                checked={settings.role === 'admin' || !settings.role} 
+                onChange={(e) => setSettings({...settings, role: 'admin'})} 
+              />
+              <div>
+                <span style={{ display: 'block' }}>管理者 (Admin)</span>
+                <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>すべての機能・設定にアクセス可能</span>
+              </div>
+            </label>
+            <label className="radioLabel">
+              <input 
+                type="radio" 
+                name="role" 
+                value="staff"
+                checked={settings.role === 'staff'} 
+                onChange={(e) => setSettings({...settings, role: 'staff'})} 
+              />
+              <div>
+                <span style={{ display: 'block' }}>一般スタッフ (Staff)</span>
+                <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>設定変更やマスタ削除などを制限</span>
+              </div>
+            </label>
           </div>
         </section>
 
@@ -191,12 +335,103 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        <div className="formActions">
-          <button onClick={handleSave} className="btn btn-primary" style={{ width: '100%' }} disabled={saving}>
-            {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
-            設定を保存する
-          </button>
-        </div>
+        {isPremium && (
+          <section className="settingsSection">
+            <h2 className="settingsTitle" style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Edit3 size={20} /> カスタム項目（独自項目）
+              </div>
+              <button onClick={handleAddCustomField} className="btn-icon" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6366f1' }}>
+                <Plus size={20} /> 追加
+              </button>
+            </h2>
+            <p className="helpText" style={{ marginBottom: '1rem' }}>在庫データに企業独自の項目を追加できます。</p>
+            
+            {(!settings.customFields || settings.customFields.length === 0) ? (
+              <div style={{ padding: '1rem', textAlign: 'center', background: 'rgba(0,0,0,0.02)', borderRadius: '8px', color: '#6b7280' }}>
+                カスタム項目はまだありません
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {settings.customFields.map((field) => (
+                  <div key={field.id} style={{ display: 'flex', gap: '1rem', alignItems: 'center', background: 'rgba(0,0,0,0.02)', padding: '1rem', borderRadius: '8px' }}>
+                    <input 
+                      type="text" 
+                      value={field.name} 
+                      onChange={(e) => handleUpdateCustomField(field.id, { name: e.target.value })}
+                      placeholder="項目名"
+                      style={{ flex: 1, padding: '0.5rem', borderRadius: '4px', border: '1px solid #d1d5db' }}
+                    />
+                    <select 
+                      value={field.type} 
+                      onChange={(e) => handleUpdateCustomField(field.id, { type: e.target.value as any })}
+                      style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #d1d5db' }}
+                    >
+                      <option value="text">テキスト</option>
+                      <option value="number">数値</option>
+                      <option value="date">日付</option>
+                      <option value="boolean">チェックボックス</option>
+                    </select>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={field.required}
+                        onChange={(e) => handleUpdateCustomField(field.id, { required: e.target.checked })}
+                      /> 必須
+                    </label>
+                    <button onClick={() => handleRemoveCustomField(field.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}>
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
+        {isPremium && (
+          <section className="settingsSection">
+            <h2 className="settingsTitle" style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <MapPin size={20} /> 拠点管理（複数倉庫）
+              </div>
+              <button onClick={handleAddLocation} className="btn-icon" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6366f1' }}>
+                <Plus size={20} /> 追加
+              </button>
+            </h2>
+            <p className="helpText" style={{ marginBottom: '1rem' }}>在庫を保管する複数の拠点や倉庫を管理できます。</p>
+            
+            {(!settings.locations || settings.locations.length === 0) ? (
+              <div style={{ padding: '1rem', textAlign: 'center', background: 'rgba(0,0,0,0.02)', borderRadius: '8px', color: '#6b7280' }}>
+                拠点はまだ登録されていません
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {settings.locations.map((loc) => (
+                  <div key={loc.id} style={{ display: 'flex', gap: '1rem', alignItems: 'center', background: 'rgba(0,0,0,0.02)', padding: '1rem', borderRadius: '8px' }}>
+                    <input 
+                      type="text" 
+                      value={loc.name} 
+                      onChange={(e) => handleUpdateLocation(loc.id, { name: e.target.value })}
+                      placeholder="拠点名 (例: 東京倉庫)"
+                      style={{ flex: 1, padding: '0.5rem', borderRadius: '4px', border: '1px solid #d1d5db' }}
+                    />
+                    <input 
+                      type="text" 
+                      value={loc.address || ''} 
+                      onChange={(e) => handleUpdateLocation(loc.id, { address: e.target.value })}
+                      placeholder="住所 (任意)"
+                      style={{ flex: 2, padding: '0.5rem', borderRadius: '4px', border: '1px solid #d1d5db' }}
+                    />
+                    <button onClick={() => handleRemoveLocation(loc.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}>
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
       </div>
     </div>
   );

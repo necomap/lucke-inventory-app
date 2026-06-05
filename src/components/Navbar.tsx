@@ -1,12 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { Package, ScanLine, Settings, User, LogOut, BarChart3 } from 'lucide-react';
+import { Package, ScanLine, Settings, User, LogOut, BarChart3, Factory } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { useInventorySettings } from '@/hooks/useInventorySettings';
 import './Navbar.css';
 
 export default function Navbar() {
   const { user, logout, loading } = useAuth();
+  const { settings } = useInventorySettings();
 
   return (
     <nav className="navbar glass-panel">
@@ -23,6 +25,12 @@ export default function Navbar() {
                 <Package size={18} />
                 <span>在庫一覧</span>
               </Link>
+              {settings?.businessTypes?.manufacturing && (
+                <Link href="/production" className="nav-link">
+                  <Factory size={18} />
+                  <span>製造・仕込</span>
+                </Link>
+              )}
               <Link href="/reports" className="nav-link">
                 <BarChart3 size={18} />
                 <span>レポート</span>

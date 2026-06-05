@@ -13,12 +13,21 @@ export interface InventoryItem {
   lastUpdated: any; // Firestore Timestamp
   createdAt: any;
   updatedBy: string; // スタッフ名
+  customFields?: Record<string, any>; // 独自項目用
+}
+
+export interface WarehouseLocation {
+  id: string;
+  name: string;
+  address?: string;
+  description?: string;
 }
 
 export interface StockTransaction {
   id: string;
   itemId: string;
   type: 'in' | 'out'; // 入庫・出庫
+  status?: 'pending' | 'approved' | 'rejected'; // 出庫承認ワークフロー用
   quantity: number;
   unitPrice: number; // 入庫時の単価
   date: any;
@@ -38,4 +47,29 @@ export interface UserSettings {
   enableVibration: boolean;
   enableAlerts: boolean;
   enableHaccpFields: boolean; // 仕入先、ロット、賞味期限の表示
+  customFields?: CustomFieldDefinition[]; // カスタム項目の定義
+  locations?: WarehouseLocation[]; // 拠点管理用
+  businessTypes?: {
+    manufacturing: boolean; // 製造業モード
+    retail: boolean; // 仕入販売業モード
+  };
+  role?: 'admin' | 'staff'; // ユーザー権限
+}
+
+export interface AuditLog {
+  id: string;
+  action: 'CREATE' | 'UPDATE' | 'DELETE';
+  targetType: 'INVENTORY' | 'TRANSACTION' | 'SETTINGS';
+  targetId: string;
+  userId: string;
+  userName: string;
+  timestamp: any;
+  details: string; // JSON文字列または詳細な説明
+}
+
+export interface CustomFieldDefinition {
+  id: string;
+  name: string;
+  type: 'text' | 'number' | 'date' | 'boolean';
+  required: boolean;
 }

@@ -16,6 +16,7 @@ import {
   addDoc,
   serverTimestamp 
 } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { 
   ArrowLeft, 
   Edit, 
@@ -30,8 +31,14 @@ import {
   User,
   Calculator,
   Truck,
-  Hash
+  Hash,
+  QrCode,
+  Printer,
+  Camera,
+  Image as ImageIcon
 } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
+import { db, storage } from '@/lib/firebase';
 import { InventoryItem, StockTransaction } from '@/types/inventory';
 import { useAuth } from '@/context/AuthContext';
 import { useInventorySettings } from '@/hooks/useInventorySettings';
@@ -55,7 +62,10 @@ export default function ItemDetailPage({ params }: { params: Promise<{ id: strin
   const [actionMemo, setActionMemo] = useState('');
   const [actionLotNo, setActionLotNo] = useState('');
   const [actionBestBefore, setActionBestBefore] = useState('');
+  const [actionImageUrl, setActionImageUrl] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showQR, setShowQR] = useState(false);
 
   useEffect(() => {
     const itemRef = doc(db, 'items', id);
@@ -112,6 +122,7 @@ export default function ItemDetailPage({ params }: { params: Promise<{ id: strin
         memo: actionMemo,
         lotNo: actionType === 'in' ? actionLotNo : '',
         bestBefore: actionType === 'in' ? actionBestBefore : '',
+        imageUrl: actionImageUrl || '',
       });
 
       setActionType(null);
@@ -120,11 +131,30 @@ export default function ItemDetailPage({ params }: { params: Promise<{ id: strin
       setActionMemo('');
       setActionLotNo('');
       setActionBestBefore('');
+      setActionImageUrl('');
     } catch (error) {
       console.error('Transaction error:', error);
       alert('エラーが発生しました。');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const storageRef = ref(storage, `transactions/${Date.now()}_${file.name}`);
+      const snapshot = await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(snapshot.ref);
+      setActionImageUrl(url);
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('画像のアップロードに失敗しました');
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -226,8 +256,24 @@ export default function ItemDetailPage({ params }: { params: Promise<{ id: strin
                   <label className="label">備考</label>
                   <input type="text" value={actionMemo} onChange={e => setActionMemo(e.target.value)} className="input" placeholder="理由など" />
                 </div>
+                <div className="formGroup" style={{ gridColumn: 'span 3' }}>
+                  <label className="label">証拠写真（任意）</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <label className="btn btnSecondary" style={{ cursor: 'pointer', margin: 0 }}>
+                      <Camera size={18} /> 写真を添付
+                      <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} disabled={isUploading} />
+                    </label>
+                    {isUploading && <Loader2 className="animate-spin" size={18} color="var(--primary-color)" />}
+                    {actionImageUrl && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f1f5f9', padding: '0.25rem 0.5rem', borderRadius: '4px' }}>
+                        <ImageIcon size={16} color="#64748b" />
+                        <span style={{ fontSize: '0.875rem', color: '#64748b' }}>添付済み</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
                 <div className="formGroup fullWidth" style={{ display: 'flex', flexDirection: 'row', gap: '1rem', marginTop: '1rem', gridColumn: '1 / -1' }}>
-                  <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={isSubmitting}>
+                  <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={isSubmitting || isUploading}>
                     確定
                   </button>
                   <button type="button" onClick={() => setActionType(null)} className="btn btnSecondary" style={{ flex: 1 }}>
@@ -274,6 +320,24 @@ export default function ItemDetailPage({ params }: { params: Promise<{ id: strin
                 <span className="infoValue">{item.memo || 'なし'}</span>
               </div>
             </div>
+
+            <div style={{ marginTop: '2rem', borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}><QrCode size={18} /> QRコード</h3>
+                <button onClick={() => setShowQR(!showQR)} className="btn btnSecondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}>
+                  {showQR ? '隠す' : '表示する'}
+                </button>
+              </div>
+              {showQR && (
+                <div style={{ marginTop: '1rem', background: '#f8fafc', padding: '1.5rem', borderRadius: '8px', textAlign: 'center' }}>
+                  <QRCodeSVG value={item.barcode || item.id} size={150} />
+                  <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#64748b' }}>{item.barcode || item.id}</p>
+                  <button className="btn btnSecondary" style={{ marginTop: '1rem' }} onClick={() => window.print()}>
+                    <Printer size={16} /> 印刷する
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="glass-panel infoSection" style={{ padding: '1.5rem' }}>
@@ -286,6 +350,7 @@ export default function ItemDetailPage({ params }: { params: Promise<{ id: strin
                     <th>種別</th>
                     <th>数量</th>
                     <th>単価/理由</th>
+                    <th>写真</th>
                     {settings?.enableHaccpFields && <th>詳細(ロット/賞味期限)</th>}
                     <th>スタッフ</th>
                   </tr>
@@ -302,6 +367,13 @@ export default function ItemDetailPage({ params }: { params: Promise<{ id: strin
                       <td>{t.quantity} {item.unit}</td>
                       <td>
                         {t.type === 'in' ? `¥${t.unitPrice.toLocaleString()}` : t.memo}
+                      </td>
+                      <td>
+                        {t.imageUrl && (
+                          <a href={t.imageUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary-color)' }}>
+                            <ImageIcon size={16} />
+                          </a>
+                        )}
                       </td>
                       {settings?.enableHaccpFields && (
                         <td style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>

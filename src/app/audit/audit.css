@@ -1,0 +1,90 @@
+.audit-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.audit-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.audit-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.audit-table th, .audit-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.audit-table th {
+  background-color: #f9fafb;
+  font-weight: 600;
+  color: #374151;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.badge-create {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.badge-update {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.badge-delete {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.log-details {
+  max-width: 300px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: monospace;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.no-data {
+  text-align: center;
+  padding: 2rem !important;
+  color: #6b7280;
+}
+
+.btn-secondary {
+  padding: 0.5rem 1rem;
+  background-color: #f3f4f6;
+  color: #374151;
+  text-decoration: none;
+  border-radius: 4px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.btn-secondary:hover {
+  background-color: #e5e7eb;
+}
