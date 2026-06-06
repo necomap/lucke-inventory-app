@@ -37,6 +37,7 @@ export interface StockTransaction {
   supplierName?: string;
   lotNo?: string;
   bestBefore?: string; // 賞味期限
+  imageUrl?: string; // 証拠写真
 }
 
 export type ValuationMethod = 'FIFO' | 'MOVING_AVERAGE';

@@ -35,7 +35,8 @@ import {
   QrCode,
   Printer,
   Camera,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Loader2
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { InventoryItem, StockTransaction } from '@/types/inventory';

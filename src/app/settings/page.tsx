@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { Settings, Bell, Volume2, Smartphone, Calculator, Save, Loader2, CreditCard, Sparkles, CheckCircle, Plus, Trash2, Edit3, MapPin, Factory, Store } from 'lucide-react';
+import { Settings, Bell, Volume2, Smartphone, Calculator, Save, Loader2, CreditCard, Sparkles, CheckCircle, Plus, Trash2, Edit3, MapPin, Factory, Store, User } from 'lucide-react';
 import { UserSettings, CustomFieldDefinition, WarehouseLocation } from '@/types/inventory';
 import './settings.css';
 
