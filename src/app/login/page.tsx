@@ -3,6 +3,7 @@
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 import './login.css';
 
 export default function LoginPage() {
@@ -10,6 +11,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -58,15 +60,24 @@ export default function LoginPage() {
             required
             style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
           />
-          <input
-            type="password"
-            placeholder="パスワード (6文字以上)"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={6}
-            style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-          />
+          <div style={{ position: 'relative' }}>
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="パスワード (6文字以上)"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={6}
+              style={{ width: '100%', padding: '0.75rem', paddingRight: '2.5rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
           <button type="submit" disabled={isSubmitting} style={{ padding: '0.75rem', borderRadius: '8px', border: 'none', background: 'var(--primary-color)', color: 'white', fontWeight: 'bold', cursor: 'pointer' }}>
             {isSubmitting ? '処理中...' : (isSignUp ? '新規登録' : 'ログイン')}
           </button>
