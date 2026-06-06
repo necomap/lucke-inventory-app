@@ -19,6 +19,8 @@ export default function InventoryListPage() {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
+    if (!user) return;
+    
     try {
       const q = query(collection(db, 'items'), orderBy('lastUpdated', 'desc'));
       const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -39,7 +41,7 @@ export default function InventoryListPage() {
       console.error("Query setup error:", err);
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   const filteredItems = items.filter(item => 
     item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

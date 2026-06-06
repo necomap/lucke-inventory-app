@@ -68,6 +68,8 @@ export default function ItemDetailPage({ params }: { params: Promise<{ id: strin
   const [showQR, setShowQR] = useState(false);
 
   useEffect(() => {
+    if (!user) return;
+
     const itemRef = doc(db, 'items', id);
     const unsubscribeItem = onSnapshot(itemRef, (doc) => {
       if (doc.exists()) {
@@ -95,7 +97,7 @@ export default function ItemDetailPage({ params }: { params: Promise<{ id: strin
       unsubscribeItem();
       unsubscribeTrans();
     };
-  }, [id, router]);
+  }, [id, router, user]);
 
   const handleTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
