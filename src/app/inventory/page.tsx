@@ -116,12 +116,20 @@ export default function InventoryListPage() {
         <h1>在庫一覧</h1>
         <div className="searchBar" style={{ display: 'flex', gap: '1rem', width: '100%', alignItems: 'center' }}>
           <div className="input-with-icon" style={{ position: 'relative', flex: 1, minWidth: '300px' }}>
-            <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+            <Search size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
             <input 
               type="text" 
               placeholder="商品名、バーコード、カテゴリで検索..." 
-              className="input" 
-              style={{ paddingLeft: '3rem', width: '100%', height: '40px' }}
+              style={{ 
+                padding: '0 1rem 0 44px', 
+                width: '100%', 
+                height: '44px', 
+                borderRadius: '8px', 
+                border: '1px solid #cbd5e1', 
+                boxSizing: 'border-box',
+                outline: 'none',
+                fontSize: '1rem'
+              }}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
