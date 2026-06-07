@@ -373,7 +373,13 @@ export default function ItemDetailPage({ params }: { params: Promise<{ id: strin
                 <tbody>
                   {transactions.map(t => (
                     <tr key={t.id}>
-                      <td>{dayjs(t.date?.toDate()).format('YYYY/MM/DD HH:mm')}</td>
+                      <td>
+                        {t.date 
+                          ? (t.date.toDate 
+                              ? dayjs(t.date.toDate()).format('YYYY/MM/DD HH:mm') 
+                              : dayjs(t.date).format('YYYY/MM/DD HH:mm'))
+                          : 'N/A'}
+                      </td>
                       <td>
                         <span className={t.type === 'in' ? 'typeIn' : 'typeOut'}>
                           {t.type === 'in' ? '入庫' : '出庫'}
