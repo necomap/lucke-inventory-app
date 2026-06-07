@@ -7,13 +7,15 @@ import { Eye, EyeOff } from 'lucide-react';
 import './login.css';
 
 export default function LoginPage() {
-  const { user, signInWithGoogle, signInWithEmail, signUpWithEmail, loading } = useAuth();
+  const { user, signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword, loading } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isReset, setIsReset] = useState(false);
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -25,15 +27,25 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setMessage('');
     setIsSubmitting(true);
     try {
-      if (isSignUp) {
+      if (isReset) {
+        if (!email) throw new Error('メールアドレスを入力してください');
+        await resetPassword(email);
+        setMessage('パスワードリセットのメールを送信しました。メールをご確認ください。');
+        setIsReset(false);
+      } else if (isSignUp) {
         await signUpWithEmail(email, password);
       } else {
         await signInWithEmail(email, password);
       }
     } catch (err: any) {
-      setError(err.message || '認証エラーが発生しました');
+      if (err.code === 'auth/invalid-credential') {
+        setError('メールアドレスまたはパスワードが間違っています。もしくはGoogleでログインしたアカウントの可能性があります。');
+      } else {
+        setError(err.message || '認証エラーが発生しました');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -50,6 +62,7 @@ export default function LoginPage() {
         </div>
         
         {error && <div style={{ color: 'red', marginBottom: '1rem', fontSize: '0.9rem', textAlign: 'center' }}>{error}</div>}
+        {message && <div style={{ color: 'green', marginBottom: '1rem', fontSize: '0.9rem', textAlign: 'center' }}>{message}</div>}
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
           <input
@@ -60,32 +73,39 @@ export default function LoginPage() {
             required
             style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
           />
-          <div style={{ position: 'relative' }}>
-            <input
-              type={showPassword ? "text" : "password"}
-              placeholder="パスワード (6文字以上)"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              style={{ width: '100%', padding: '0.75rem', paddingRight: '2.5rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}
-            >
-              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
-          </div>
+          {!isReset && (
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="パスワード (6文字以上)"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                style={{ width: '100%', padding: '0.75rem', paddingRight: '2.5rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          )}
           <button type="submit" disabled={isSubmitting} style={{ padding: '0.75rem', borderRadius: '8px', border: 'none', background: 'var(--primary-color)', color: 'white', fontWeight: 'bold', cursor: 'pointer' }}>
-            {isSubmitting ? '処理中...' : (isSignUp ? '新規登録' : 'ログイン')}
+            {isSubmitting ? '処理中...' : (isReset ? 'パスワードをリセット' : (isSignUp ? '新規登録' : 'ログイン'))}
           </button>
         </form>
 
-        <div style={{ textAlign: 'center', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-          <button type="button" onClick={() => setIsSignUp(!isSignUp)} style={{ background: 'none', border: 'none', color: 'var(--primary-color)', cursor: 'pointer', textDecoration: 'underline' }}>
-            {isSignUp ? 'すでにアカウントをお持ちの方はこちら' : '初めての方はこちら（新規登録）'}
+        <div style={{ textAlign: 'center', marginBottom: '1.5rem', fontSize: '0.9rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          {!isReset && (
+            <button type="button" onClick={() => setIsSignUp(!isSignUp)} style={{ background: 'none', border: 'none', color: 'var(--primary-color)', cursor: 'pointer', textDecoration: 'underline' }}>
+              {isSignUp ? 'すでにアカウントをお持ちの方はこちら' : '初めての方はこちら（新規登録）'}
+            </button>
+          )}
+          <button type="button" onClick={() => { setIsReset(!isReset); setIsSignUp(false); }} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', textDecoration: 'underline' }}>
+            {isReset ? 'ログイン画面に戻る' : 'パスワードをお忘れの方はこちら'}
           </button>
         </div>
 

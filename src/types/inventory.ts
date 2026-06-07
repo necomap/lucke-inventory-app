@@ -4,6 +4,7 @@ export interface InventoryItem {
   barcode: string;
   category: string;
   unit: string; // 単位 (kg, 個, mlなど)
+  unitPrice?: number; // 商品価格（単価）
   status: string; // '新品', '中古', '要修理' など
   location: string;
   memo: string;

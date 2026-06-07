@@ -33,7 +33,7 @@
 
 .itemImage {
   width: 100%;
-  aspect-ratio: 16/10;
+  height: 140px;
   object-fit: cover;
   background: #f1f5f9;
 }

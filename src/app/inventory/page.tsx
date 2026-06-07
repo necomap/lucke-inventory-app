@@ -235,7 +235,7 @@ export default function InventoryListPage() {
         <div style={{ marginTop: '3rem', padding: '1.5rem', background: 'rgba(0,0,0,0.02)', border: '1px dashed #cbd5e1', borderRadius: '12px', textAlign: 'center' }}>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '0.5rem' }}>スポンサーリンク</p>
           <div style={{ width: '100%', maxWidth: '728px', height: '90px', margin: '0 auto', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px' }}>
-            <span style={{ color: '#94a3b8' }}>ここにGoogle AdSense広告が表示されます</span>
+            <span style={{ color: '#94a3b8' }}>スポンサー募集中</span>
           </div>
         </div>
       )}

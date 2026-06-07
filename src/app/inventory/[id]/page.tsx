@@ -175,7 +175,7 @@ export default function ItemDetailPage({ params }: { params: Promise<{ id: strin
           </button>
           <h1>商品詳細</h1>
         </div>
-        <button onClick={() => alert('編集機能は開発中です')} className="btn btnSecondary">
+        <button onClick={() => router.push(`/inventory/${item.id}/edit`)} className="btn btnSecondary">
           <Edit size={18} />
           編集
         </button>
@@ -302,6 +302,10 @@ export default function ItemDetailPage({ params }: { params: Promise<{ id: strin
                 <span className="infoValue">{item.barcode || '未設定'}</span>
               </div>
               <div className="infoItem">
+                <span className="infoLabel">商品価格(単価)</span>
+                <span className="infoValue">{item.unitPrice ? `¥${item.unitPrice.toLocaleString()}` : '未設定'}</span>
+              </div>
+              <div className="infoItem">
                 <span className="infoLabel">カテゴリ</span>
                 <span className="infoValue"><Tag size={14} /> {item.category || '未設定'}</span>
               </div>
@@ -368,7 +372,7 @@ export default function ItemDetailPage({ params }: { params: Promise<{ id: strin
                       </td>
                       <td>{t.quantity} {item.unit}</td>
                       <td>
-                        {t.type === 'in' ? `¥${t.unitPrice.toLocaleString()}` : t.memo}
+                        {t.type === 'in' ? `¥${(t.unitPrice || 0).toLocaleString()}` : t.memo}
                       </td>
                       <td>
                         {t.imageUrl && (

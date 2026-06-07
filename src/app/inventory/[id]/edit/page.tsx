@@ -1,24 +1,26 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useInventorySettings } from '@/hooks/useInventorySettings';
 import { db, storage } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, getDocs, query, limit } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { Camera, Barcode, Save, X, Loader2, Lock, Sparkles, Truck, Calendar, Hash } from 'lucide-react';
+import { Camera, Barcode, Save, X, Loader2, Lock, Truck } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
-import './inventory-form.css';
+import '../../new/inventory-form.css';
 
-export default function NewItemPage() {
+export default function EditItemPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const { user } = useAuth();
-  const { isPremium, loading: subLoading } = useSubscription();
+  const { isPremium } = useSubscription();
   const { settings } = useInventorySettings();
   const router = useRouter();
+  
   const [loading, setLoading] = useState(false);
-  const [itemCount, setItemCount] = useState(0);
+  const [fetching, setFetching] = useState(true);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
@@ -31,20 +33,44 @@ export default function NewItemPage() {
     location: '',
     memo: '',
     minStock: 0,
-    currentStock: 0,
-    initialCost: 0,
     unitPrice: 0,
     supplierName: '',
   });
 
   useEffect(() => {
-    const fetchCount = async () => {
-      const q = query(collection(db, 'items'), limit(101));
-      const snap = await getDocs(q);
-      setItemCount(snap.size);
+    const fetchItem = async () => {
+      try {
+        const itemRef = doc(db, 'items', id);
+        const itemSnap = await getDoc(itemRef);
+        if (itemSnap.exists()) {
+          const data = itemSnap.data();
+          setFormData({
+            name: data.name || '',
+            barcode: data.barcode || '',
+            category: data.category || '',
+            unit: data.unit || '',
+            status: data.status || '新品',
+            location: data.location || '',
+            memo: data.memo || '',
+            minStock: data.minStock || 0,
+            unitPrice: data.unitPrice || 0,
+            supplierName: data.supplierName || '',
+          });
+          if (data.imageUrl) {
+            setImagePreview(data.imageUrl);
+          }
+        } else {
+          router.push('/inventory');
+        }
+      } catch (error) {
+        console.error('Error fetching item:', error);
+      } finally {
+        setFetching(false);
+      }
     };
-    fetchCount();
-  }, []);
+
+    fetchItem();
+  }, [id, router]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -59,82 +85,53 @@ export default function NewItemPage() {
     }
   };
 
-  const isLimitReached = !isPremium && itemCount >= 100;
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || isLimitReached) return;
+    if (!user) return;
     setLoading(true);
 
     try {
-      let imageUrl = '';
+      let imageUrl = imagePreview; // 既存の画像URLを保持
       if (imageFile) {
         const imageRef = ref(storage, `items/${uuidv4()}`);
         await uploadBytes(imageRef, imageFile);
         imageUrl = await getDownloadURL(imageRef);
       }
 
-      const itemData = {
+      const itemRef = doc(db, 'items', id);
+      const updateData = {
         ...formData,
-        location: isPremium ? formData.location : '', // 無料プランは場所を保存しない
-        imageUrl,
-        createdAt: serverTimestamp(),
+        location: isPremium ? formData.location : '', 
+        imageUrl: imageUrl || '',
         lastUpdated: serverTimestamp(),
         updatedBy: user.displayName || user.email || 'Unknown',
-        currentStock: Number(formData.currentStock),
         minStock: Number(formData.minStock),
         unitPrice: Number(formData.unitPrice),
       };
 
-      const docRef = await addDoc(collection(db, 'items'), itemData);
-
-      // 初回入庫履歴の作成
-      if (Number(formData.currentStock) > 0) {
-        await addDoc(collection(db, 'transactions'), {
-          itemId: docRef.id,
-          type: 'in',
-          quantity: Number(formData.currentStock),
-          unitPrice: Number(formData.initialCost),
-          date: serverTimestamp(),
-          staffName: user.displayName || user.email || 'Unknown',
-          memo: '初期在庫登録',
-        });
-      }
-
-      router.push('/inventory');
+      await updateDoc(itemRef, updateData);
+      router.push(`/inventory/${id}`);
     } catch (error) {
-      console.error('Error adding document: ', error);
+      console.error('Error updating document: ', error);
       alert('エラーが発生しました。');
     } finally {
       setLoading(false);
     }
   };
 
+  if (fetching) return <div style={{ textAlign: 'center', padding: '4rem' }}><Loader2 className="animate-spin" /> 読み込み中...</div>;
+
   return (
     <div className="formContainer">
       <div className="formHeader">
-        <h1>新規商品登録</h1>
+        <h1>商品情報の編集</h1>
         <button onClick={() => router.back()} className="btn btnSecondary">
           <X size={18} />
           キャンセル
         </button>
       </div>
 
-      {isLimitReached && (
-        <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '2rem', border: '1px solid #ef4444', background: 'rgba(239, 68, 68, 0.05)' }}>
-          <h3 style={{ color: '#ef4444', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Lock size={18} /> 登録上限に達しました
-          </h3>
-          <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>
-            無料プランでは100件までしか登録できません。プレミアムプランへアップグレードすると無制限に登録可能になります。
-          </p>
-          <button onClick={() => router.push('/settings')} className="btn btn-primary" style={{ marginTop: '1rem' }}>
-            <Sparkles size={18} /> アップグレードする
-          </button>
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="glass-panel" style={{ padding: '2rem', opacity: isLimitReached ? 0.5 : 1, pointerEvents: isLimitReached ? 'none' : 'auto' }}>
+      <form onSubmit={handleSubmit} className="glass-panel" style={{ padding: '2rem' }}>
         <div className="formGrid">
           <div className="formGroup fullWidth">
             <label className="label">商品画像</label>
@@ -166,7 +163,6 @@ export default function NewItemPage() {
               onChange={handleInputChange} 
               className="input" 
               required 
-              placeholder="例: マウス、備品Aなど"
             />
           </div>
 
@@ -180,7 +176,6 @@ export default function NewItemPage() {
                 onChange={handleInputChange} 
                 className="input" 
                 style={{ flex: 1 }}
-                placeholder="スキャンまたは入力"
               />
               <button type="button" className="barcodeBtn">
                 <Barcode size={18} />
@@ -196,7 +191,6 @@ export default function NewItemPage() {
               value={formData.category} 
               onChange={handleInputChange} 
               className="input" 
-              placeholder="例: 事務用品、原材料"
             />
           </div>
 
@@ -208,7 +202,6 @@ export default function NewItemPage() {
               value={formData.unit} 
               onChange={handleInputChange} 
               className="input" 
-              placeholder="例: kg, 個, 本"
             />
           </div>
 
@@ -222,7 +215,6 @@ export default function NewItemPage() {
                   value={formData.supplierName} 
                   onChange={handleInputChange} 
                   className="input" 
-                  placeholder="例: ○○商事"
                   style={{ width: '100%', paddingLeft: '2.5rem' }}
                 />
                 <Truck size={18} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
@@ -248,7 +240,6 @@ export default function NewItemPage() {
                 value={formData.location} 
                 onChange={handleInputChange} 
                 className="input" 
-                placeholder={isPremium ? "例: 倉庫A-棚1" : "アップグレードで利用可能"}
                 disabled={!isPremium}
                 style={{ width: '100%', paddingRight: !isPremium ? '2.5rem' : '0.75rem' }}
               />
@@ -257,33 +248,11 @@ export default function NewItemPage() {
           </div>
 
           <div className="formGroup">
-            <label className="label">初期在庫数</label>
-            <input 
-              type="number" 
-              name="currentStock" 
-              value={formData.currentStock} 
-              onChange={handleInputChange} 
-              className="input" 
-            />
-          </div>
-
-          <div className="formGroup">
             <label className="label">最低在庫数 (アラート用)</label>
             <input 
               type="number" 
               name="minStock" 
               value={formData.minStock} 
-              onChange={handleInputChange} 
-              className="input" 
-            />
-          </div>
-
-          <div className="formGroup">
-            <label className="label">初期仕入単価 (円)</label>
-            <input 
-              type="number" 
-              name="initialCost" 
-              value={formData.initialCost} 
               onChange={handleInputChange} 
               className="input" 
             />
@@ -300,17 +269,6 @@ export default function NewItemPage() {
             />
           </div>
 
-          <div className="formGroup">
-            <label className="label">登録スタッフ</label>
-            <input 
-              type="text" 
-              value={user?.displayName || user?.email || ''} 
-              readOnly 
-              className="input" 
-              style={{ background: 'rgba(0,0,0,0.05)' }}
-            />
-          </div>
-
           <div className="formGroup fullWidth">
             <label className="label">備考</label>
             <textarea 
@@ -324,9 +282,9 @@ export default function NewItemPage() {
         </div>
 
         <div className="formActions">
-          <button type="submit" className="btn btn-primary" disabled={loading || isLimitReached}>
+          <button type="submit" className="btn btn-primary" disabled={loading}>
             {loading ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
-            商品を登録する
+            変更を保存する
           </button>
         </div>
       </form>

@@ -7,9 +7,9 @@ import { StockTransaction } from '@/types/inventory';
  * @returns 在庫の総額
  */
 export function calculateFIFO(transactions: StockTransaction[], currentStock: number): number {
-  const inTransactions = transactions
+  const inTransactions = [...transactions]
     .filter(t => t.type === 'in')
-    .sort((a, b) => b.date.seconds - a.date.seconds); // 新しい順
+    .sort((a, b) => (b.date?.seconds || 0) - (a.date?.seconds || 0)); // 新しい順
 
   let remaining = currentStock;
   let totalValue = 0;
@@ -17,7 +17,7 @@ export function calculateFIFO(transactions: StockTransaction[], currentStock: nu
   for (const t of inTransactions) {
     if (remaining <= 0) break;
     const taken = Math.min(remaining, t.quantity);
-    totalValue += taken * t.unitPrice;
+    totalValue += taken * (t.unitPrice || 0);
     remaining -= taken;
   }
 
@@ -30,7 +30,7 @@ export function calculateFIFO(transactions: StockTransaction[], currentStock: nu
  * @returns 最終的な平均単価
  */
 export function calculateMovingAverage(transactions: StockTransaction[]): number {
-  const sortedTransactions = transactions.sort((a, b) => a.date.seconds - b.date.seconds); // 古い順
+  const sortedTransactions = [...transactions].sort((a, b) => (a.date?.seconds || 0) - (b.date?.seconds || 0)); // 古い順
 
   let totalStock = 0;
   let totalValue = 0;
@@ -38,7 +38,7 @@ export function calculateMovingAverage(transactions: StockTransaction[]): number
 
   for (const t of sortedTransactions) {
     if (t.type === 'in') {
-      const newValue = t.quantity * t.unitPrice;
+      const newValue = t.quantity * (t.unitPrice || 0);
       totalValue += newValue;
       totalStock += t.quantity;
       if (totalStock > 0) {
