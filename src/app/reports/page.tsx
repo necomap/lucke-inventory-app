@@ -44,7 +44,7 @@ export default function ReportsPage() {
     };
 
     fetchAllData();
-  }, []);
+  }, [user]);
 
   const calculateTotalValuation = () => {
     let total = 0;

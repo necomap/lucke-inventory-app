@@ -8,7 +8,7 @@ import { CheckCircle, XCircle, Clock } from 'lucide-react';
 import Link from 'next/link';
 import './approvals.css';
 import { useSubscription } from '@/hooks/useSubscription';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/context/AuthContext';
 
 export default function ApprovalsPage() {
   const { user } = useAuth();
@@ -64,7 +64,7 @@ export default function ApprovalsPage() {
       }
     };
     fetchPending();
-  }, [subLoading, isPremium]);
+  }, [subLoading, isPremium, user]);
 
   const handleApprove = async (transaction: StockTransaction) => {
     if (!confirm('出庫を承認して在庫を減らしますか？')) return;

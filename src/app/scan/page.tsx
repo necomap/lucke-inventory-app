@@ -35,6 +35,7 @@ export default function ScanPage() {
   });
 
   const handleFoundBarcode = async (barcode: string) => {
+    if (!user) return;
     setLoading(true);
     playSuccessSound();
     triggerVibration();

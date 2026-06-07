@@ -43,7 +43,7 @@ export default function AuditLogsPage() {
       }
     };
     fetchLogs();
-  }, []);
+  }, [user]);
 
   return (
     <div className="audit-container">
