@@ -89,11 +89,17 @@ export default function ItemDetailPage({ params }: { params: Promise<{ id: strin
         ...doc.data()
       })) as StockTransaction[];
       
-      // JS側でソート
+      // JS側でソート (最新順：新しいものが上)
       transData.sort((a, b) => {
-        const aTime = a.date?.toMillis ? a.date.toMillis() : 0;
-        const bTime = b.date?.toMillis ? b.date.toMillis() : 0;
-        return bTime - aTime;
+        const getMs = (d: any) => {
+          if (!d) return 0;
+          if (typeof d.toMillis === 'function') return d.toMillis();
+          if (typeof d.toDate === 'function') return d.toDate().getTime();
+          if (d instanceof Date) return d.getTime();
+          const parsed = Date.parse(d);
+          return isNaN(parsed) ? 0 : parsed;
+        };
+        return getMs(b.date) - getMs(a.date);
       });
 
       setTransactions(transData);

@@ -31,11 +31,17 @@ export default function ReportsPage() {
       ));
       const transData = transSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as StockTransaction));
       
-      // Firestoreの複合インデックスエラーを回避するためJS側でソート
+      // Firestoreの複合インデックスエラーを回避するためJS側でソート (古い順：昇順)
       transData.sort((a, b) => {
-        const aTime = a.date?.toMillis ? a.date.toMillis() : 0;
-        const bTime = b.date?.toMillis ? b.date.toMillis() : 0;
-        return aTime - bTime;
+        const getMs = (d: any) => {
+          if (!d) return 0;
+          if (typeof d.toMillis === 'function') return d.toMillis();
+          if (typeof d.toDate === 'function') return d.toDate().getTime();
+          if (d instanceof Date) return d.getTime();
+          const parsed = Date.parse(d);
+          return isNaN(parsed) ? 0 : parsed;
+        };
+        return getMs(a.date) - getMs(b.date);
       });
       
       setTransactions(transData);

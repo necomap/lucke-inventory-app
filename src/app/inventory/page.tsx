@@ -32,11 +32,17 @@ export default function InventoryListPage() {
           ...doc.data()
         })) as InventoryItem[];
         
-        // JS側でソート
+        // JS側でソート (更新日時が最新順：新しいものが上)
         itemsData.sort((a, b) => {
-          const aTime = a.lastUpdated?.toMillis ? a.lastUpdated.toMillis() : 0;
-          const bTime = b.lastUpdated?.toMillis ? b.lastUpdated.toMillis() : 0;
-          return bTime - aTime;
+          const getMs = (d: any) => {
+            if (!d) return 0;
+            if (typeof d.toMillis === 'function') return d.toMillis();
+            if (typeof d.toDate === 'function') return d.toDate().getTime();
+            if (d instanceof Date) return d.getTime();
+            const parsed = Date.parse(d);
+            return isNaN(parsed) ? 0 : parsed;
+          };
+          return getMs(b.lastUpdated) - getMs(a.lastUpdated);
         });
 
         setItems(itemsData);

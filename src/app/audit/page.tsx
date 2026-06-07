@@ -27,11 +27,17 @@ export default function AuditLogsPage() {
           ...doc.data()
         })) as AuditLog[];
 
-        // JS側でソートと制限
+        // JS側でソートと制限 (最新順：新しいものが上)
         logsData.sort((a, b) => {
-          const aTime = a.timestamp?.toMillis ? a.timestamp.toMillis() : 0;
-          const bTime = b.timestamp?.toMillis ? b.timestamp.toMillis() : 0;
-          return bTime - aTime;
+          const getMs = (d: any) => {
+            if (!d) return 0;
+            if (typeof d.toMillis === 'function') return d.toMillis();
+            if (typeof d.toDate === 'function') return d.toDate().getTime();
+            if (d instanceof Date) return d.getTime();
+            const parsed = Date.parse(d);
+            return isNaN(parsed) ? 0 : parsed;
+          };
+          return getMs(b.timestamp) - getMs(a.timestamp);
         });
         logsData = logsData.slice(0, 100);
 
