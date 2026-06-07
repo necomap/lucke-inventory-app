@@ -9,7 +9,6 @@ import {
   collection, 
   query, 
   where, 
-  orderBy, 
   onSnapshot,
   updateDoc,
   increment,
@@ -82,15 +81,24 @@ export default function ItemDetailPage({ params }: { params: Promise<{ id: strin
 
     const q = query(
       collection(db, 'transactions'), 
-      where('itemId', '==', id),
-      orderBy('date', 'desc')
+      where('itemId', '==', id)
     );
     const unsubscribeTrans = onSnapshot(q, (snapshot) => {
       const transData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as StockTransaction[];
+      
+      // JS側でソート
+      transData.sort((a, b) => {
+        const aTime = a.date?.toMillis ? a.date.toMillis() : 0;
+        const bTime = b.date?.toMillis ? b.date.toMillis() : 0;
+        return bTime - aTime;
+      });
+
       setTransactions(transData);
+    }, (error) => {
+      console.error("Transactions snapshot error:", error);
     });
 
     return () => {
