@@ -40,7 +40,11 @@ export default function ScanPage() {
     triggerVibration();
     
     try {
-      const q = query(collection(db, 'items'), where('barcode', '==', barcode));
+      const q = query(
+        collection(db, 'items'), 
+        where('barcode', '==', barcode),
+        where('userId', '==', user.uid)
+      );
       const querySnapshot = await getDocs(q);
       
       if (!querySnapshot.empty) {
@@ -73,6 +77,7 @@ export default function ScanPage() {
 
       await addDoc(collection(db, 'transactions'), {
         itemId: foundItem.id,
+        userId: user.uid,
         type: type,
         quantity: 1,
         unitPrice: 0,
@@ -116,6 +121,7 @@ export default function ScanPage() {
 
       await addDoc(collection(db, 'transactions'), {
         itemId: foundItem.id,
+        userId: user.uid,
         type: type,
         quantity: absDiff,
         unitPrice: 0,

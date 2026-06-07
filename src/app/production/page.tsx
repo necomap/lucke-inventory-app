@@ -38,7 +38,7 @@ export default function ProductionPage() {
 
         // 現在の在庫データの取得
         if (user) {
-          const q = query(collection(db, 'items'));
+          const q = query(collection(db, 'items'), where('userId', '==', user.uid));
           const snapshot = await getDocs(q);
           const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as InventoryItem));
           setInventoryItems(items);
@@ -93,6 +93,7 @@ export default function ProductionPage() {
       // トランザクション記録 (入庫)
       await addDoc(collection(db, 'transactions'), {
         itemId: finishedItemId,
+        userId: user.uid,
         type: 'in',
         quantity: produceQty,
         unitPrice: 0,
@@ -118,6 +119,7 @@ export default function ProductionPage() {
           // 出庫トランザクション
           await addDoc(collection(db, 'transactions'), {
             itemId: matchedItem.id,
+            userId: user.uid,
             type: 'out',
             quantity: totalRequiredAmount,
             unitPrice: 0,
@@ -133,7 +135,7 @@ export default function ProductionPage() {
       setProduceQty(1);
       
       // 在庫再取得
-      const q = query(collection(db, 'items'));
+      const q = query(collection(db, 'items'), where('userId', '==', user.uid));
       const snapshot = await getDocs(q);
       setInventoryItems(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as InventoryItem)));
       

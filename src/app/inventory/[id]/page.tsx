@@ -116,6 +116,7 @@ export default function ItemDetailPage({ params }: { params: Promise<{ id: strin
       // 2. 履歴の追加
       await addDoc(collection(db, 'transactions'), {
         itemId: id,
+        userId: user.uid,
         type: actionType,
         quantity: actionQty,
         unitPrice: actionType === 'in' ? actionPrice : 0,

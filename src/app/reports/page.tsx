@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, query, getDocs, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, where } from 'firebase/firestore';
 import { InventoryItem, StockTransaction, ValuationMethod } from '@/types/inventory';
 import { useAuth } from '@/context/AuthContext';
 import { useInventorySettings } from '@/hooks/useInventorySettings';
@@ -20,11 +20,16 @@ export default function ReportsPage() {
   useEffect(() => {
     // 全商品と全履歴を取得
     const fetchAllData = async () => {
-      const itemsSnap = await getDocs(collection(db, 'items'));
+      if (!user) return;
+      const itemsSnap = await getDocs(query(collection(db, 'items'), where('userId', '==', user.uid)));
       const itemsData = itemsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as InventoryItem));
       setItems(itemsData);
 
-      const transSnap = await getDocs(query(collection(db, 'transactions'), orderBy('date', 'asc')));
+      const transSnap = await getDocs(query(
+        collection(db, 'transactions'), 
+        where('userId', '==', user.uid),
+        orderBy('date', 'asc')
+      ));
       const transData = transSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as StockTransaction));
       setTransactions(transData);
       

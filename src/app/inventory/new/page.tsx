@@ -78,6 +78,7 @@ export default function NewItemPage() {
         ...formData,
         location: isPremium ? formData.location : '', // 無料プランは場所を保存しない
         imageUrl,
+        userId: user.uid,
         createdAt: serverTimestamp(),
         lastUpdated: serverTimestamp(),
         updatedBy: user.displayName || user.email || 'Unknown',
@@ -92,6 +93,7 @@ export default function NewItemPage() {
       if (Number(formData.currentStock) > 0) {
         await addDoc(collection(db, 'transactions'), {
           itemId: docRef.id,
+          userId: user.uid,
           type: 'in',
           quantity: Number(formData.currentStock),
           unitPrice: Number(formData.initialCost),

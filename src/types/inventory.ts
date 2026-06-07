@@ -1,5 +1,6 @@
 export interface InventoryItem {
   id: string;
+  userId?: string; // マルチテナント対応
   name: string;
   barcode: string;
   category: string;
@@ -26,6 +27,7 @@ export interface WarehouseLocation {
 
 export interface StockTransaction {
   id: string;
+  userId?: string; // マルチテナント対応
   itemId: string;
   type: 'in' | 'out'; // 入庫・出庫
   status?: 'pending' | 'approved' | 'rejected'; // 出庫承認ワークフロー用
@@ -60,10 +62,10 @@ export interface UserSettings {
 
 export interface AuditLog {
   id: string;
+  userId?: string; // マルチテナント対応
   action: 'CREATE' | 'UPDATE' | 'DELETE';
   targetType: 'INVENTORY' | 'TRANSACTION' | 'SETTINGS';
   targetId: string;
-  userId: string;
   userName: string;
   timestamp: any;
   details: string; // JSON文字列または詳細な説明

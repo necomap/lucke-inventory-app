@@ -24,6 +24,7 @@ export default function ApprovalsPage() {
       try {
         const q = query(
           collection(db, 'transactions'),
+          where('userId', '==', user.uid),
           where('status', '==', 'pending'),
           orderBy('date', 'desc')
         );

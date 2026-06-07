@@ -1,21 +1,25 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, limit, getDocs, where } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { AuditLog } from '../../types/inventory';
+import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 import './audit.css';
 
 export default function AuditLogsPage() {
+  const { user } = useAuth();
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchLogs = async () => {
       try {
+        if (!user) return;
         const q = query(
           collection(db, 'auditLogs'),
+          where('userId', '==', user.uid),
           orderBy('timestamp', 'desc'),
           limit(100)
         );
