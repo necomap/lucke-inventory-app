@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, query, orderBy, limit, getDocs, where } from 'firebase/firestore';
+import { collection, query, getDocs, where } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { AuditLog } from '../../types/inventory';
 import { useAuth } from '@/context/AuthContext';
@@ -19,15 +19,22 @@ export default function AuditLogsPage() {
         if (!user) return;
         const q = query(
           collection(db, 'auditLogs'),
-          where('userId', '==', user.uid),
-          orderBy('timestamp', 'desc'),
-          limit(100)
+          where('userId', '==', user.uid)
         );
         const snapshot = await getDocs(q);
-        const logsData = snapshot.docs.map(doc => ({
+        let logsData = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         })) as AuditLog[];
+
+        // JS側でソートと制限
+        logsData.sort((a, b) => {
+          const aTime = a.timestamp?.toMillis ? a.timestamp.toMillis() : 0;
+          const bTime = b.timestamp?.toMillis ? b.timestamp.toMillis() : 0;
+          return bTime - aTime;
+        });
+        logsData = logsData.slice(0, 100);
+
         setLogs(logsData);
       } catch (error) {
         console.error('Failed to fetch audit logs', error);

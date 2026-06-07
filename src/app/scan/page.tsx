@@ -42,17 +42,21 @@ export default function ScanPage() {
     try {
       const q = query(
         collection(db, 'items'), 
-        where('barcode', '==', barcode),
-        where('userId', '==', user.uid)
+        where('barcode', '==', barcode)
       );
       const querySnapshot = await getDocs(q);
       
       if (!querySnapshot.empty) {
-        const itemDoc = querySnapshot.docs[0];
-        const item = { id: itemDoc.id, ...itemDoc.data() } as InventoryItem;
-        setFoundItem(item);
-        if (scanMode === 'stocktake') {
-          setActualCount(item.currentStock);
+        // userIdが一致するものだけをフィルタ
+        const itemDoc = querySnapshot.docs.find(doc => doc.data().userId === user.uid);
+        if (itemDoc) {
+          const item = { id: itemDoc.id, ...itemDoc.data() } as InventoryItem;
+          setFoundItem(item);
+          if (scanMode === 'stocktake') {
+            setActualCount(item.currentStock);
+          }
+        } else {
+          setFoundItem(null);
         }
       } else {
         setFoundItem(null);

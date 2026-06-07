@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, orderBy, where } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { InventoryItem, StockTransaction, ValuationMethod } from '@/types/inventory';
 import { useAuth } from '@/context/AuthContext';
 import { useInventorySettings } from '@/hooks/useInventorySettings';
@@ -27,10 +27,17 @@ export default function ReportsPage() {
 
       const transSnap = await getDocs(query(
         collection(db, 'transactions'), 
-        where('userId', '==', user.uid),
-        orderBy('date', 'asc')
+        where('userId', '==', user.uid)
       ));
       const transData = transSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as StockTransaction));
+      
+      // Firestoreの複合インデックスエラーを回避するためJS側でソート
+      transData.sort((a, b) => {
+        const aTime = a.date?.toMillis ? a.date.toMillis() : 0;
+        const bTime = b.date?.toMillis ? b.date.toMillis() : 0;
+        return aTime - bTime;
+      });
+      
       setTransactions(transData);
       
       setLoading(false);

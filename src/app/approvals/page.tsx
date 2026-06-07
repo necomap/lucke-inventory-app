@@ -1,21 +1,23 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, query, where, orderBy, getDocs, doc, updateDoc, increment } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { StockTransaction, InventoryItem } from '../../types/inventory';
 import { CheckCircle, XCircle, Clock } from 'lucide-react';
 import Link from 'next/link';
 import './approvals.css';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function ApprovalsPage() {
+  const { user } = useAuth();
   const { isPremium, loading: subLoading } = useSubscription();
   const [pendingTransactions, setPendingTransactions] = useState<(StockTransaction & { itemName?: string })[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (subLoading || !isPremium) {
+    if (subLoading || !isPremium || !user) {
       setLoading(false);
       return;
     }
@@ -25,14 +27,20 @@ export default function ApprovalsPage() {
         const q = query(
           collection(db, 'transactions'),
           where('userId', '==', user.uid),
-          where('status', '==', 'pending'),
-          orderBy('date', 'desc')
+          where('status', '==', 'pending')
         );
         const snapshot = await getDocs(q);
         const transData = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         })) as StockTransaction[];
+
+        // JS側でソート
+        transData.sort((a, b) => {
+          const aTime = a.date?.toMillis ? a.date.toMillis() : 0;
+          const bTime = b.date?.toMillis ? b.date.toMillis() : 0;
+          return bTime - aTime;
+        });
 
         // Fetch item names for context
         const enriched = await Promise.all(transData.map(async t => {

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { db } from '@/lib/firebase';
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, where } from 'firebase/firestore';
+import { collection, query, onSnapshot, addDoc, serverTimestamp, where } from 'firebase/firestore';
 import { Plus, Search, MapPin, Tag, AlertCircle, Package, Download, Upload } from 'lucide-react';
 import { InventoryItem } from '@/types/inventory';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -24,14 +24,21 @@ export default function InventoryListPage() {
     try {
       const q = query(
         collection(db, 'items'), 
-        where('userId', '==', user.uid),
-        orderBy('lastUpdated', 'desc')
+        where('userId', '==', user.uid)
       );
       const unsubscribe = onSnapshot(q, (snapshot) => {
         const itemsData = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         })) as InventoryItem[];
+        
+        // JS側でソート
+        itemsData.sort((a, b) => {
+          const aTime = a.lastUpdated?.toMillis ? a.lastUpdated.toMillis() : 0;
+          const bTime = b.lastUpdated?.toMillis ? b.lastUpdated.toMillis() : 0;
+          return bTime - aTime;
+        });
+
         setItems(itemsData);
         setLoading(false);
       }, (error) => {
