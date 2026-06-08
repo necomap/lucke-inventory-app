@@ -12,6 +12,13 @@ export function useInventorySettings() {
     enableVibration: true,
     enableAlerts: true,
     enableHaccpFields: false,
+    businessTypes: {
+      manufacturing: false,
+      retail: true
+    },
+    customFields: [],
+    locations: [],
+    role: 'admin'
   });
 
   useEffect(() => {
@@ -27,6 +34,10 @@ export function useInventorySettings() {
           enableVibration: data.enableVibration ?? true,
           enableAlerts: data.enableAlerts ?? true,
           enableHaccpFields: data.enableHaccpFields ?? false,
+          businessTypes: data.businessTypes ?? { manufacturing: false, retail: true },
+          customFields: data.customFields ?? [],
+          locations: data.locations ?? [],
+          role: data.role ?? 'admin',
         });
       }
     };
