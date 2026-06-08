@@ -2,9 +2,10 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
 import { collection, query, onSnapshot, addDoc, serverTimestamp, where } from 'firebase/firestore';
-import { Plus, Search, MapPin, Tag, AlertCircle, Package, Download, Upload } from 'lucide-react';
+import { Plus, Search, MapPin, Tag, AlertCircle, Package, Download, Upload, LayoutGrid, List } from 'lucide-react';
 import { InventoryItem } from '@/types/inventory';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/context/AuthContext';
@@ -12,11 +13,29 @@ import Papa from 'papaparse';
 import './inventory.css';
 
 export default function InventoryListPage() {
+  const router = useRouter();
   const { isPremium, loading: subLoading } = useSubscription();
   const { user } = useAuth();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedMode = localStorage.getItem('inventoryViewMode') as 'grid' | 'list';
+      if (savedMode) {
+        setViewMode(savedMode);
+      }
+    }
+  }, []);
+
+  const handleToggleViewMode = (mode: 'grid' | 'list') => {
+    setViewMode(mode);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('inventoryViewMode', mode);
+    }
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -152,10 +171,26 @@ export default function InventoryListPage() {
             />
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
-            <button onClick={handleExportCSV} className="btn btnSecondary" title="CSVエクスポート">
+            <button 
+              onClick={() => handleToggleViewMode('grid')} 
+              className={`btn ${viewMode === 'grid' ? 'btn-primary' : 'btnSecondary'}`}
+              title="グリッド表示（画像あり）"
+              style={{ padding: '0.5rem' }}
+            >
+              <LayoutGrid size={18} />
+            </button>
+            <button 
+              onClick={() => handleToggleViewMode('list')} 
+              className={`btn ${viewMode === 'list' ? 'btn-primary' : 'btnSecondary'}`}
+              title="リスト表示（画像なし・コンパクト）"
+              style={{ padding: '0.5rem' }}
+            >
+              <List size={18} />
+            </button>
+            <button onClick={handleExportCSV} className="btn btnSecondary" title="CSVエクスポート" style={{ padding: '0.5rem' }}>
               <Download size={18} />
             </button>
-            <label className="btn btnSecondary" title="CSVインポート" style={{ cursor: 'pointer', margin: 0 }}>
+            <label className="btn btnSecondary" title="CSVインポート" style={{ cursor: 'pointer', margin: 0, padding: '0.5rem' }}>
               <Upload size={18} />
               <input type="file" accept=".csv" onChange={handleImportCSV} style={{ display: 'none' }} />
             </label>
@@ -206,7 +241,7 @@ export default function InventoryListPage() {
             最初の商品を登録する
           </Link>
         </div>
-      ) : (
+      ) : viewMode === 'grid' ? (
         <div className="inventoryGrid">
           {filteredItems.map(item => (
             <Link href={`/inventory/${item.id}`} key={item.id} className="itemCard glass-panel">
@@ -244,6 +279,42 @@ export default function InventoryListPage() {
               </div>
             </Link>
           ))}
+        </div>
+      ) : (
+        <div className="glass-panel" style={{ padding: '0.5rem', overflowX: 'auto' }}>
+          <table className="inventoryTable">
+            <thead>
+              <tr>
+                <th>商品名</th>
+                <th>カテゴリ</th>
+                <th>保管場所</th>
+                <th>状態</th>
+                <th style={{ textAlign: 'right' }}>在庫数</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredItems.map(item => (
+                <tr key={item.id} onClick={() => router.push(`/inventory/${item.id}`)} className="inventoryRow">
+                  <td style={{ fontWeight: 600, color: 'var(--text-color, #1e293b)' }}>{item.name}</td>
+                  <td>{item.category ? <span><Tag size={12} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />{item.category}</span> : '-'}</td>
+                  <td>{item.location ? <span><MapPin size={12} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />{item.location}</span> : '-'}</td>
+                  <td>
+                    <span className="tag" style={{ background: 'rgba(0,0,0,0.03)' }}>{item.status}</span>
+                  </td>
+                  <td style={{ textAlign: 'right' }}>
+                    <span className={`listStockCount ${item.currentStock <= item.minStock ? 'lowStock' : ''}`}>
+                      {item.currentStock} {item.unit}
+                    </span>
+                    {item.currentStock <= item.minStock && (
+                      <span className="lowStockBadge" style={{ marginLeft: '8px', padding: '1px 4px', fontSize: '0.65rem' }}>
+                        少
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
