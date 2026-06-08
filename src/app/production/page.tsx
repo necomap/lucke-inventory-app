@@ -11,7 +11,7 @@ import { useRouter } from 'next/navigation';
 
 export default function ProductionPage() {
   const { user } = useAuth();
-  const { settings } = useInventorySettings();
+  const { settings, loading: settingsLoading } = useInventorySettings();
   const router = useRouter();
   
   const [recipes, setRecipes] = useState<any[]>([]);
@@ -22,6 +22,8 @@ export default function ProductionPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    if (settingsLoading) return;
+
     if (settings && !settings.businessTypes?.manufacturing) {
       router.push('/inventory');
       return;
@@ -51,7 +53,7 @@ export default function ProductionPage() {
     };
 
     fetchData();
-  }, [user, settings, router]);
+  }, [user, settings, settingsLoading, router]);
 
   const handleProduce = async () => {
     if (!selectedRecipe || !user) return;
@@ -147,7 +149,7 @@ export default function ProductionPage() {
     }
   };
 
-  if (loading) return <div style={{ padding: '4rem', textAlign: 'center' }}><Loader2 className="animate-spin" /></div>;
+  if (loading || settingsLoading) return <div style={{ padding: '4rem', textAlign: 'center' }}><Loader2 className="animate-spin" /></div>;
 
   return (
     <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '2rem' }}>
