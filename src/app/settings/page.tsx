@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { Settings, Bell, Volume2, Smartphone, Calculator, Save, Loader2, CreditCard, Sparkles, CheckCircle, Plus, Trash2, Edit3, MapPin, Factory, Store, User } from 'lucide-react';
+import { Settings, Bell, Volume2, Smartphone, Calculator, Save, Loader2, CreditCard, Sparkles, CheckCircle, Plus, Trash2, Edit3, MapPin, Factory, Store, User, Package, AlertCircle } from 'lucide-react';
 import { UserSettings, CustomFieldDefinition, WarehouseLocation } from '@/types/inventory';
 import './settings.css';
 
@@ -332,6 +332,20 @@ export default function SettingsPage() {
                 onChange={(e) => setSettings({...settings, enableHaccpFields: e.target.checked})} 
               />
             </label>
+            {settings.enableHaccpFields && (
+              <div style={{ margin: '1rem 0 0 2.5rem', padding: '1rem', background: '#f0f9ff', border: '1px solid #bae6fd', borderLeft: '4px solid #0284c7', borderRadius: '8px', display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+                <AlertCircle size={18} color="#0284c7" style={{ marginTop: '0.1rem', flexShrink: 0 }} />
+                <div>
+                  <strong style={{ color: '#0369a1', display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem' }}>HACCPアプリと自動連動中！</strong>
+                  <span style={{ fontSize: '0.8rem', color: '#0f172a', display: 'block', lineHeight: '1.5' }}>
+                    HACCPアプリで納品記録を付けると、こちらの在庫数が自動で加算され、入庫履歴も自動記録されます。
+                  </span>
+                  <a href="https://haccp.lucke.jp/" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.5rem', fontSize: '0.8rem', fontWeight: 'bold', color: '#0284c7', textDecoration: 'none' }}>
+                    HACCPアプリを開く <Package size={12} />
+                  </a>
+                </div>
+              </div>
+            )}
           </div>
         </section>
 
