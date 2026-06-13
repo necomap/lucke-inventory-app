@@ -24,7 +24,7 @@ export default function Home() {
       </section>
 
       <section className="featuresGrid">
-        <div className="featureCard glass-panel">
+        <div className="featureCard">
           <div className="featureIcon">
             <ScanLine size={32} />
           </div>
@@ -36,7 +36,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="featureCard glass-panel">
+        <div className="featureCard">
           <div className="featureIcon">
             <Package size={32} />
           </div>
@@ -48,7 +48,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="featureCard glass-panel">
+        <div className="featureCard">
           <div className="featureIcon">
             <BarChart3 size={32} />
           </div>
@@ -60,7 +60,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="featureCard glass-panel">
+        <div className="featureCard">
           <div className="featureIcon">
             <Database size={32} />
           </div>

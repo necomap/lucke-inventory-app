@@ -55,7 +55,7 @@ export default function LoginPage() {
 
   return (
     <div className="loginContainer">
-      <div className="loginCard glass-panel">
+      <div className="loginCard">
         <div className="loginHeader">
           <h1>Lucke Inventory</h1>
           <p>在庫管理をスマートに始めましょう</p>
@@ -71,7 +71,7 @@ export default function LoginPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+            className="loginFormInput"
           />
           {!isReset && (
             <div style={{ position: 'relative' }}>
@@ -82,7 +82,8 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                style={{ width: '100%', padding: '0.75rem', paddingRight: '2.5rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                className="loginFormInput"
+                style={{ paddingRight: '2.5rem' }}
               />
               <button
                 type="button"

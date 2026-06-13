@@ -19,7 +19,8 @@ export function useInventorySettings() {
     },
     customFields: [],
     locations: [],
-    role: 'admin'
+    role: 'admin',
+    haccpCategories: ''
   });
 
   useEffect(() => {
@@ -43,6 +44,7 @@ export function useInventorySettings() {
             customFields: data.customFields ?? [],
             locations: data.locations ?? [],
             role: data.role ?? 'admin',
+            haccpCategories: data.haccpCategories ?? '',
           });
         }
       } catch (error) {

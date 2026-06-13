@@ -6,9 +6,9 @@ import { useAuth } from '@/context/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useInventorySettings } from '@/hooks/useInventorySettings';
 import { db, storage } from '@/lib/firebase';
-import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, deleteDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { Camera, Barcode, Save, X, Loader2, Lock, Truck } from 'lucide-react';
+import { Camera, Barcode, Save, X, Loader2, Lock, Truck, Trash2 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import '../../new/inventory-form.css';
 
@@ -114,6 +114,37 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
     } catch (error) {
       console.error('Error updating document: ', error);
       alert('エラーが発生しました。');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!user || settings.role !== 'admin') return;
+    if (!confirm(`本当にこの商品「${formData.name}」を削除しますか？\n削除すると元に戻せません。`)) return;
+
+    setLoading(true);
+    try {
+      // 1. 商品の削除
+      const itemRef = doc(db, 'items', id);
+      await deleteDoc(itemRef);
+
+      // 2. 監査ログの追加
+      await addDoc(collection(db, 'auditLogs'), {
+        timestamp: serverTimestamp(),
+        userName: user.displayName || user.email || 'Unknown',
+        action: 'DELETE',
+        targetType: 'item',
+        targetId: id,
+        details: `商品「${formData.name}」を削除しました。`,
+        userId: user.uid
+      });
+
+      alert('商品を削除しました。');
+      router.push('/inventory');
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      alert('削除中にエラーが発生しました。');
     } finally {
       setLoading(false);
     }
@@ -281,11 +312,23 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
           </div>
         </div>
 
-        <div className="formActions">
-          <button type="submit" className="btn btn-primary" disabled={loading}>
+        <div className="formActions" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+          <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={loading}>
             {loading ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
             変更を保存する
           </button>
+          {settings.role === 'admin' && (
+            <button 
+              type="button" 
+              onClick={handleDelete} 
+              className="btn" 
+              style={{ background: '#ef4444', color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center', flex: 1 }}
+              disabled={loading}
+            >
+              {loading ? <Loader2 className="animate-spin" size={18} /> : <Trash2 size={18} />}
+              この商品を削除する
+            </button>
+          )}
         </div>
       </form>
     </div>

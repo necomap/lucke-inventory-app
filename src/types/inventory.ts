@@ -58,6 +58,7 @@ export interface UserSettings {
     retail: boolean; // 仕入販売業モード
   };
   role?: 'admin' | 'staff'; // ユーザー権限
+  haccpCategories?: string; // HACCP連携カテゴリ
 }
 
 export interface AuditLog {

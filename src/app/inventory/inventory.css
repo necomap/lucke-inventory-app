@@ -135,3 +135,23 @@
   font-weight: 800;
   font-size: 1.1rem;
 }
+
+@media (max-width: 768px) {
+  /* リストテーブルのスマホ表示最適化 */
+  .inventoryTable th:nth-child(2),
+  .inventoryTable td:nth-child(2),
+  .inventoryTable th:nth-child(4),
+  .inventoryTable td:nth-child(4) {
+    display: none; /* スマホでは「カテゴリ」と「状態」列を非表示に */
+  }
+  
+  .inventoryTable th,
+  .inventoryTable td {
+    padding: 0.5rem 0.5rem; /* パディングをさらに狭く */
+    font-size: 0.85rem;
+  }
+  
+  .listStockCount {
+    font-size: 0.95rem;
+  }
+}

@@ -27,7 +27,8 @@ export default function SettingsPage() {
       manufacturing: false,
       retail: true
     },
-    role: 'admin'
+    role: 'admin',
+    haccpCategories: ''
   });
 
   useEffect(() => {
@@ -47,6 +48,7 @@ export default function SettingsPage() {
           locations: data.locations ?? [],
           businessTypes: data.businessTypes ?? { manufacturing: false, retail: true },
           role: data.role ?? 'admin',
+          haccpCategories: data.haccpCategories ?? '',
         });
       }
       setLoading(false);
@@ -333,18 +335,32 @@ export default function SettingsPage() {
               />
             </label>
             {settings.enableHaccpFields && (
-              <div style={{ margin: '1rem 0 0 2.5rem', padding: '1rem', background: '#f0f9ff', border: '1px solid #bae6fd', borderLeft: '4px solid #0284c7', borderRadius: '8px', display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
-                <AlertCircle size={18} color="#0284c7" style={{ marginTop: '0.1rem', flexShrink: 0 }} />
-                <div>
-                  <strong style={{ color: '#0369a1', display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem' }}>HACCPアプリと自動連動中！</strong>
-                  <span style={{ fontSize: '0.8rem', color: '#0f172a', display: 'block', lineHeight: '1.5' }}>
-                    HACCPアプリで納品記録を付けると、こちらの在庫数が自動で加算され、入庫履歴も自動記録されます。
-                  </span>
-                  <a href="https://haccp.lucke.jp/" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.5rem', fontSize: '0.8rem', fontWeight: 'bold', color: '#0284c7', textDecoration: 'none' }}>
-                    HACCPアプリを開く <Package size={12} />
-                  </a>
+              <>
+                <div style={{ margin: '1rem 0 1rem 2.5rem' }}>
+                  <label className="label" style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>HACCP連携する商品カテゴリ (カンマ区切り)</label>
+                  <input 
+                    type="text" 
+                    value={settings.haccpCategories || ''} 
+                    onChange={(e) => setSettings({...settings, haccpCategories: e.target.value})} 
+                    placeholder="例: 原材料, 仕込み品 (空欄なら全商品)" 
+                    className="input" 
+                    style={{ marginTop: '0.25rem' }}
+                  />
+                  <p className="helpText" style={{ marginTop: '0.25rem' }}>指定されたカテゴリの商品のみがHACCPアプリ側に連携されます。</p>
                 </div>
-              </div>
+                <div style={{ margin: '1rem 0 0 2.5rem', padding: '1rem', background: '#f0f9ff', border: '1px solid #bae6fd', borderLeft: '4px solid #0284c7', borderRadius: '8px', display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+                  <AlertCircle size={18} color="#0284c7" style={{ marginTop: '0.1rem', flexShrink: 0 }} />
+                  <div>
+                    <strong style={{ color: '#0369a1', display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem' }}>HACCPアプリと自動連動中！</strong>
+                    <span style={{ fontSize: '0.8rem', color: '#0f172a', display: 'block', lineHeight: '1.5' }}>
+                      HACCPアプリで納品記録を付けると、こちらの在庫数が自動で加算され、入庫履歴も自動記録されます。
+                    </span>
+                    <a href="https://haccp.lucke.jp/" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.5rem', fontSize: '0.8rem', fontWeight: 'bold', color: '#0284c7', textDecoration: 'none' }}>
+                      HACCPアプリを開く <Package size={12} />
+                    </a>
+                  </div>
+                </div>
+              </>
             )}
           </div>
         </section>

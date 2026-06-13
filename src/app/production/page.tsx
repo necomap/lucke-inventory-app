@@ -9,6 +9,39 @@ import { Factory, Loader2, Plus, ArrowRight, AlertCircle, CheckCircle } from 'lu
 import { InventoryItem } from '@/types/inventory';
 import { useRouter } from 'next/navigation';
 
+// 単位変換ヘルパー関数
+const getConvertedAmountAndUnit = (
+  ingredientAmount: number,
+  ingredientUnit: string,
+  stockUnit: string
+) => {
+  if (!ingredientUnit || !stockUnit) return { amount: ingredientAmount, unit: stockUnit, factor: 1 };
+  
+  const ingUnitNorm = ingredientUnit.toLowerCase().trim();
+  const stkUnitNorm = stockUnit.toLowerCase().trim();
+
+  // 1. 重量: 在庫が kg で レシピが g の場合
+  if (stkUnitNorm === 'kg' && ingUnitNorm === 'g') {
+    return { amount: ingredientAmount / 1000, unit: 'kg', factor: 0.001 };
+  }
+  // 在庫が g で レシピが kg の場合
+  if (stkUnitNorm === 'g' && ingUnitNorm === 'kg') {
+    return { amount: ingredientAmount * 1000, unit: 'g', factor: 1000 };
+  }
+
+  // 2. 容量: 在庫が L で レシピが ml / cc の場合
+  if (stkUnitNorm === 'l' && (ingUnitNorm === 'ml' || ingUnitNorm === 'cc')) {
+    return { amount: ingredientAmount / 1000, unit: 'L', factor: 0.001 };
+  }
+  // 在庫が ml / cc で レシピが L の場合
+  if ((stkUnitNorm === 'ml' || stkUnitNorm === 'cc') && ingUnitNorm === 'l') {
+    return { amount: ingredientAmount * 1000, unit: stkUnitNorm, factor: 1000 };
+  }
+
+  // 変換なし
+  return { amount: ingredientAmount, unit: stockUnit, factor: 1 };
+};
+
 export default function ProductionPage() {
   const { user } = useAuth();
   const { settings, loading: settingsLoading } = useInventorySettings();
@@ -111,9 +144,13 @@ export default function ProductionPage() {
         const matchedItem = inventoryItems.find(item => item.name === ingredient.name);
         
         if (matchedItem) {
+          // 単位の変換
+          const conversion = getConvertedAmountAndUnit(ingredient.amount, ingredient.unit, matchedItem.unit);
+          const totalRequiredInStockUnit = conversion.amount * produceQty;
+
           const itemRef = doc(db, 'items', matchedItem.id);
           await updateDoc(itemRef, {
-            currentStock: increment(-totalRequiredAmount),
+            currentStock: increment(-totalRequiredInStockUnit),
             lastUpdated: serverTimestamp(),
             updatedBy: user.displayName || user.email || 'Unknown'
           });
@@ -123,11 +160,11 @@ export default function ProductionPage() {
             itemId: matchedItem.id,
             userId: user.uid,
             type: 'out',
-            quantity: totalRequiredAmount,
+            quantity: totalRequiredInStockUnit,
             unitPrice: 0,
             date: serverTimestamp(),
             staffName: user.displayName || user.email || 'Unknown',
-            memo: `製造使用（${selectedRecipe.name}）`
+            memo: `製造使用（${selectedRecipe.name}）：${totalRequiredAmount} ${ingredient.unit} 使用`
           });
         }
       }
@@ -205,10 +242,23 @@ export default function ProductionPage() {
                 <h3 style={{ fontSize: '1rem', color: '#334155', marginBottom: '0.5rem' }}>必要材料 (引き落とし予定)</h3>
                 <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
                   {selectedRecipe.ingredients.map((ing: any) => {
-                    const requiredAmount = ing.amount * produceQty;
+                    const requiredAmountInRecipeUnit = ing.amount * produceQty;
                     const inventoryItem = inventoryItems.find(item => item.name === ing.name);
+                    
+                    let requiredAmountInStockUnit = requiredAmountInRecipeUnit;
+                    let displayRequiredText = `${requiredAmountInRecipeUnit.toLocaleString()} ${ing.unit}`;
+                    
+                    if (inventoryItem) {
+                      const conversion = getConvertedAmountAndUnit(ing.amount, ing.unit, inventoryItem.unit);
+                      requiredAmountInStockUnit = conversion.amount * produceQty;
+                      
+                      if (ing.unit.toLowerCase().trim() !== inventoryItem.unit.toLowerCase().trim()) {
+                        displayRequiredText = `${requiredAmountInRecipeUnit.toLocaleString()} ${ing.unit} (在庫換算: ${requiredAmountInStockUnit.toLocaleString()} ${inventoryItem.unit})`;
+                      }
+                    }
+
                     const stock = inventoryItem?.currentStock || 0;
-                    const isShort = stock < requiredAmount;
+                    const isShort = stock < requiredAmountInStockUnit;
 
                     return (
                       <div key={ing.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid #e2e8f0' }}>
@@ -217,9 +267,9 @@ export default function ProductionPage() {
                           <span style={{ color: '#1e293b' }}>{ing.name}</span>
                         </div>
                         <div style={{ textAlign: 'right' }}>
-                          <span style={{ fontWeight: 'bold' }}>{requiredAmount.toLocaleString()} {ing.unit}</span>
+                          <span style={{ fontWeight: 'bold' }}>{displayRequiredText}</span>
                           <div style={{ fontSize: '0.75rem', color: isShort ? '#ef4444' : '#64748b' }}>
-                            現在庫: {stock} (不足: {isShort ? requiredAmount - stock : 0})
+                            現在庫: {stock} {inventoryItem?.unit || ing.unit} (不足: {isShort ? (requiredAmountInStockUnit - stock).toLocaleString() : 0})
                           </div>
                         </div>
                       </div>
