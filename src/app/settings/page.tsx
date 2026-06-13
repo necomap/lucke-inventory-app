@@ -159,6 +159,25 @@ export default function SettingsPage() {
         </button>
       </div>
 
+      <div style={{ padding: '1rem', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div>
+          <strong style={{ display: 'block', marginBottom: '0.25rem', color: '#334155' }}>HACCP連携用 ユーザーID</strong>
+          <span style={{ fontFamily: 'monospace', color: '#64748b', fontSize: '0.95rem' }}>{user?.uid || '---'}</span>
+        </div>
+        <button 
+          onClick={() => {
+            if (user?.uid) {
+              navigator.clipboard.writeText(user.uid);
+              alert('ユーザーIDをコピーしました。HACCPアプリの設定画面に貼り付けてください。');
+            }
+          }} 
+          className="btn btnSecondary" 
+          style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
+        >
+          コピーする
+        </button>
+      </div>
+
       {settings.role === 'staff' && (
         <div style={{ padding: '1rem', background: '#fee2e2', color: '#991b1b', borderRadius: '8px', marginBottom: '1rem' }}>
           <strong>権限エラー:</strong> 現在「一般スタッフ」権限のため、設定の変更はできません。
