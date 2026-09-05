@@ -159,25 +159,6 @@ export default function SettingsPage() {
         </button>
       </div>
 
-      <div style={{ padding: '1rem', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div>
-          <strong style={{ display: 'block', marginBottom: '0.25rem', color: '#334155' }}>HACCP連携用 ユーザーID</strong>
-          <span style={{ fontFamily: 'monospace', color: '#64748b', fontSize: '0.95rem' }}>{user?.uid || '---'}</span>
-        </div>
-        <button 
-          onClick={() => {
-            if (user?.uid) {
-              navigator.clipboard.writeText(user.uid);
-              alert('ユーザーIDをコピーしました。HACCPアプリの設定画面に貼り付けてください。');
-            }
-          }} 
-          className="btn btnSecondary" 
-          style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
-        >
-          コピーする
-        </button>
-      </div>
-
       {settings.role === 'staff' && (
         <div style={{ padding: '1rem', background: '#fee2e2', color: '#991b1b', borderRadius: '8px', marginBottom: '1rem' }}>
           <strong>権限エラー:</strong> 現在「一般スタッフ」権限のため、設定の変更はできません。
@@ -366,6 +347,32 @@ export default function SettingsPage() {
                     style={{ marginTop: '0.25rem' }}
                   />
                   <p className="helpText" style={{ marginTop: '0.25rem' }}>指定されたカテゴリの商品のみがHACCPアプリ側に連携されます。</p>
+                </div>
+                <div style={{ margin: '1rem 0 1rem 2.5rem' }}>
+                  <label className="label" style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>HACCP連携用 ユーザーID</label>
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
+                    <input 
+                      type="text" 
+                      value={user?.uid || ''} 
+                      readOnly 
+                      className="input" 
+                      style={{ flex: 1, fontFamily: 'monospace', background: 'rgba(0,0,0,0.03)' }}
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        if (user?.uid) {
+                          navigator.clipboard.writeText(user.uid);
+                          alert('ユーザーIDをコピーしました。HACCPアプリの設定画面に貼り付けてください。');
+                        }
+                      }} 
+                      className="btn btnSecondary" 
+                      style={{ whiteSpace: 'nowrap' }}
+                    >
+                      コピー
+                    </button>
+                  </div>
+                  <p className="helpText" style={{ marginTop: '0.25rem' }}>このユーザーIDをコピーして、HACCPアプリの設定画面に貼り付けてください。</p>
                 </div>
                 <div style={{ margin: '1rem 0 0 2.5rem', padding: '1rem', background: '#f0f9ff', border: '1px solid #bae6fd', borderLeft: '4px solid #0284c7', borderRadius: '8px', display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
                   <AlertCircle size={18} color="#0284c7" style={{ marginTop: '0.1rem', flexShrink: 0 }} />
