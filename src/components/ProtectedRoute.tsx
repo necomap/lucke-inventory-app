@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 
 // ログインが不要な公開ページのパス
-const PUBLIC_PATHS = ['/', '/login', '/about', '/contact', '/privacy'];
+const PUBLIC_PATHS = ['/', '/login', '/about', '/contact', '/privacy', '/faq'];
 
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();

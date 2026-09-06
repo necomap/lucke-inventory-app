@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Package, ScanLine, Settings, User, LogOut, BarChart3, Factory } from 'lucide-react';
+import { Package, ScanLine, Settings, User, LogOut, BarChart3, Factory, HelpCircle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useInventorySettings } from '@/hooks/useInventorySettings';
 import './Navbar.css';
@@ -42,6 +42,10 @@ export default function Navbar() {
               <Link href="/settings" className="nav-link">
                 <Settings size={18} />
                 <span>設定</span>
+              </Link>
+              <Link href="/faq" className="nav-link">
+                <HelpCircle size={18} />
+                <span>よくある質問</span>
               </Link>
               <div className="user-section">
                 {user.photoURL ? (

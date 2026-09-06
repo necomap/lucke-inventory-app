@@ -9,6 +9,7 @@ export default function Footer() {
           <Link href="/about">運営者情報</Link>
           <Link href="/privacy">プライバシーポリシー</Link>
           <Link href="/contact">お問い合わせ</Link>
+          <Link href="/faq">よくある質問</Link>
         </div>
         <div className="footer-copyright">
           &copy; {new Date().getFullYear()} Lucke Inventory. All rights reserved.
