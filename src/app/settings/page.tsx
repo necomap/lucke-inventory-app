@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { db } from '@/lib/firebase';
@@ -14,7 +15,6 @@ export default function SettingsPage() {
   const { plan, isPremium, isPro, loading: subLoading } = useSubscription();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
   const [settings, setSettings] = useState<UserSettings>({
     valuationMethod: 'FIFO',
@@ -153,29 +153,6 @@ export default function SettingsPage() {
     }
   };
 
-  // 2026-09修正: 新設のproプランにも対応できるよう、どちらのプランへ申し込むかを
-  // 引数で指定できるようにした（未指定の場合は従来通りpremium）。
-  const handleUpgrade = async (targetPlan: 'premium' | 'pro' = 'premium') => {
-    if (!user) return;
-    setCheckoutLoading(true);
-    try {
-      const res = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.uid, email: user.email, plan: targetPlan }),
-      });
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      }
-    } catch (error) {
-      console.error('Checkout error:', error);
-      alert('エラーが発生しました。');
-    } finally {
-      setCheckoutLoading(false);
-    }
-  };
-
   if (loading || subLoading) return <div style={{ textAlign: 'center', padding: '4rem' }}>読み込み中...</div>;
 
   return (
@@ -224,16 +201,14 @@ export default function SettingsPage() {
               </button>
             ) : (
               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                {!isPremium && (
-                  <button onClick={() => handleUpgrade('premium')} className="btn btn-primary" disabled={checkoutLoading}>
-                    {checkoutLoading ? <Loader2 className="animate-spin" size={18} /> : <Sparkles size={18} />}
-                    スタンダードへ
-                  </button>
-                )}
-                <button onClick={() => handleUpgrade('pro')} className="btn btn-primary" disabled={checkoutLoading} style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)' }}>
-                  {checkoutLoading ? <Loader2 className="animate-spin" size={18} /> : <Sparkles size={18} />}
-                  プロへ（FoodLabel Pro連携）
-                </button>
+                {/* 2026-09修正: 以前はここのボタンを押すと各プランのStripe決済ページへ
+                    直接ジャンプしていたが、料金・機能を見比べる間もなく課金画面に
+                    飛んでしまうと分かりにくいという指摘があったため、まず/upgradeの
+                    プラン比較ページへ案内し、そこで内容を確認したうえで申し込む形にした。 */}
+                <Link href="/upgrade" className="btn btn-primary">
+                  <Sparkles size={18} />
+                  プランを比較する
+                </Link>
                 {isPremium && (
                   <button onClick={handlePortal} className="btn btnSecondary" disabled={portalLoading}>
                     {portalLoading ? <Loader2 className="animate-spin" size={18} /> : <CheckCircle size={18} />}
