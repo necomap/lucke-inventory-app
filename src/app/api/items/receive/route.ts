@@ -46,6 +46,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 単位チェック: 双方に単位が設定されていて、かつ食い違っている場合は加算しない。
+    // 例: こちら側が「ml」で登録されているのに、HACCP側が「本」で4と送ってきた場合、
+    // そのまま4を加算すると数量として無意味な値になってしまう（本来はml換算が必要）。
+    // 換算表を持たない現状では安全側に倒し、未マッチと同様に「反映せず」に倒すことで、
+    // HACCP側では独自在庫への従来どおりのフォールバック加算に回してもらう。
+    const targetData = targetDoc.data();
+    const targetUnit = String(targetData.unit || '').trim().toLowerCase();
+    const requestUnit = String(unit || '').trim().toLowerCase();
+    if (targetUnit && requestUnit && targetUnit !== requestUnit) {
+      return NextResponse.json(
+        {
+          matched: false,
+          unitMismatch: true,
+          expectedUnit: targetData.unit,
+          message: `単位が一致しないため反映しませんでした（在庫アプリ側の単位: ${targetData.unit} / 送られてきた単位: ${unit}）`,
+        },
+        { status: 200 }
+      );
+    }
+
     await targetDoc.ref.update({
       currentStock: admin.firestore.FieldValue.increment(qty),
       lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
