@@ -53,6 +53,10 @@ export default function ProductionPage() {
   const [produceQty, setProduceQty] = useState<number>(1);
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // 2026-09新設: FoodLabel Pro連携が未設定の場合に案内を出すためのフラグ
+  const [foodlabelNotConfigured, setFoodlabelNotConfigured] = useState(false);
+  // 2026-09新設: FoodLabel Pro連携はproプラン限定機能。未加入の場合に案内を出すためのフラグ
+  const [planRequired, setPlanRequired] = useState(false);
 
   useEffect(() => {
     if (settingsLoading) return;
@@ -64,15 +68,18 @@ export default function ProductionPage() {
 
     const fetchData = async () => {
       try {
-        // レシピの取得 (FoodLabel API経由)
-        const res = await fetch('/api/foodlabel/recipes');
-        if (res.ok) {
-          const data = await res.json();
-          setRecipes(data.recipes || []);
-        }
-
-        // 現在の在庫データの取得
         if (user) {
+          // レシピの取得 (FoodLabel API経由。自分のアカウントに紐づくAPIキーで
+          // 認証されるため、自分のレシピだけが返る。2026-09セキュリティ修正)
+          const res = await fetch(`/api/foodlabel/recipes?userId=${user.uid}`);
+          if (res.ok) {
+            const data = await res.json();
+            setRecipes(data.recipes || []);
+            setFoodlabelNotConfigured(!!data.notConfigured);
+            setPlanRequired(!!data.planRequired);
+          }
+
+          // 現在の在庫データの取得
           const q = query(collection(db, 'items'), where('userId', '==', user.uid));
           const snapshot = await getDocs(q);
           const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as InventoryItem));
@@ -199,7 +206,15 @@ export default function ProductionPage() {
         <div className="glass-panel" style={{ padding: '1.5rem' }}>
           <h2 style={{ fontSize: '1.125rem', marginBottom: '1rem', color: '#334155' }}>FoodLabel レシピ選択</h2>
           
-          {recipes.length === 0 ? (
+          {planRequired ? (
+            <p style={{ color: '#64748b' }}>
+              FoodLabel Pro連携（製造・仕込の自動在庫減算）はプロプラン限定機能です。<a href="/settings" style={{ color: 'var(--primary-color)' }}>設定ページ</a>からアップグレードしてください。
+            </p>
+          ) : foodlabelNotConfigured ? (
+            <p style={{ color: '#64748b' }}>
+              FoodLabel Pro連携が設定されていません。<a href="/settings" style={{ color: 'var(--primary-color)' }}>設定ページ</a>で、FoodLabel Proの設定画面で発行したAPIキーを入力してください。
+            </p>
+          ) : recipes.length === 0 ? (
             <p style={{ color: '#64748b' }}>レシピが見つかりません。FoodLabel Proでレシピを作成してください。</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '500px', overflowY: 'auto' }}>

@@ -59,6 +59,10 @@ export interface UserSettings {
   };
   role?: 'admin' | 'staff'; // ユーザー権限
   haccpCategories?: string; // HACCP連携カテゴリ
+  // 2026-09新設: FoodLabel Pro（レシピ管理アプリ）連携用APIキー。FoodLabel Pro側の
+  // 設定画面で発行したキーをここに貼り付けると、「製造・仕込」ページでレシピが
+  // 取得できるようになる（app/api/foodlabel/recipes/route.ts参照）。
+  foodlabelApiKey?: string;
 }
 
 export interface AuditLog {

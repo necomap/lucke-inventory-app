@@ -263,7 +263,7 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
           </div>
 
           <div className="formGroup" style={{ position: 'relative' }}>
-            <label className="label">保管場所 {!isPremium && <span style={{ color: 'var(--secondary-color)', fontSize: '0.7rem' }}>(プレミアム限定)</span>}</label>
+            <label className="label">保管場所 {!isPremium && <span style={{ color: 'var(--secondary-color)', fontSize: '0.7rem' }}>(スタンダード限定)</span>}</label>
             <div style={{ position: 'relative' }}>
               <input 
                 type="text" 

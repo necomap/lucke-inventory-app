@@ -1,9 +1,16 @@
 import { NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
+import { isPaidPlan, PLAN_PRICING, type PaidPlan } from '@/lib/stripe-plans';
 
 export async function POST(req: Request) {
   try {
-    const { userId, email } = await req.json();
+    const { userId, email, plan } = await req.json();
+
+    // 2026-09修正: 新設のproプランにも対応できるよう、金額・商品名を
+    // lib/stripe-plans.tsの対応表から引くようにした（以前はpremiumのみ決め打ち）。
+    // planが未指定の場合は従来通りpremiumとして扱う（後方互換）。
+    const targetPlan: PaidPlan = isPaidPlan(plan) ? plan : 'premium';
+    const pricing = PLAN_PRICING[targetPlan];
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -12,10 +19,10 @@ export async function POST(req: Request) {
           price_data: {
             currency: 'jpy',
             product_data: {
-              name: 'Lucke Inventory プレミアムプラン',
-              description: 'アイテム登録数無制限、ロケーション管理、広告なし',
+              name: pricing.name,
+              description: pricing.description,
             },
-            unit_amount: 1000, // 例: 1000円
+            unit_amount: pricing.unitAmount,
             recurring: {
               interval: 'month',
             },
@@ -29,6 +36,7 @@ export async function POST(req: Request) {
       customer_email: email,
       metadata: {
         userId: userId,
+        plan: targetPlan,
       },
     });
 

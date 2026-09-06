@@ -11,10 +11,11 @@ import './settings.css';
 
 export default function SettingsPage() {
   const { user } = useAuth();
-  const { plan, isPremium, loading: subLoading } = useSubscription();
+  const { plan, isPremium, isPro, loading: subLoading } = useSubscription();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
   const [settings, setSettings] = useState<UserSettings>({
     valuationMethod: 'FIFO',
     enableSound: true,
@@ -28,7 +29,8 @@ export default function SettingsPage() {
       retail: true
     },
     role: 'admin',
-    haccpCategories: ''
+    haccpCategories: '',
+    foodlabelApiKey: ''
   });
 
   useEffect(() => {
@@ -49,6 +51,7 @@ export default function SettingsPage() {
           businessTypes: data.businessTypes ?? { manufacturing: false, retail: true },
           role: data.role ?? 'admin',
           haccpCategories: data.haccpCategories ?? '',
+          foodlabelApiKey: data.foodlabelApiKey ?? '',
         });
       }
       setLoading(false);
@@ -126,14 +129,40 @@ export default function SettingsPage() {
     }));
   };
 
-  const handleUpgrade = async () => {
+  // 2026-09新設: お支払い方法の変更・解約用ポータルへの導線
+  const handlePortal = async () => {
+    if (!user) return;
+    setPortalLoading(true);
+    try {
+      const res = await fetch('/api/portal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.uid }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert(data.error ?? 'エラーが発生しました');
+      }
+    } catch (error) {
+      console.error('Portal error:', error);
+      alert('エラーが発生しました。');
+    } finally {
+      setPortalLoading(false);
+    }
+  };
+
+  // 2026-09修正: 新設のproプランにも対応できるよう、どちらのプランへ申し込むかを
+  // 引数で指定できるようにした（未指定の場合は従来通りpremium）。
+  const handleUpgrade = async (targetPlan: 'premium' | 'pro' = 'premium') => {
     if (!user) return;
     setCheckoutLoading(true);
     try {
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.uid, email: user.email }),
+        body: JSON.stringify({ userId: user.uid, email: user.email, plan: targetPlan }),
       });
       const data = await res.json();
       if (data.url) {
@@ -169,30 +198,49 @@ export default function SettingsPage() {
         
         <section className="settingsSection">
           <h2 className="settingsTitle"><CreditCard size={20} /> 現在のプラン</h2>
-          <div className="planCard" style={{ 
-            padding: '1.5rem', 
-            borderRadius: '12px', 
-            background: isPremium ? 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)' : 'rgba(0,0,0,0.05)',
+          <div className="planCard" style={{
+            padding: '1.5rem',
+            borderRadius: '12px',
+            background: isPro ? 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)' : isPremium ? 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)' : 'rgba(0,0,0,0.05)',
             color: isPremium ? 'white' : 'inherit',
             display: 'flex',
             justifyContent: 'space-between',
-            alignItems: 'center'
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '1rem'
           }}>
             <div>
               <div style={{ fontWeight: 800, fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                {isPremium ? <><Sparkles size={20} /> プレミアムプラン</> : '無料プラン'}
+                {isPro ? <><Sparkles size={20} /> プロプラン</> : isPremium ? <><Sparkles size={20} /> スタンダードプラン</> : '無料プラン'}
               </div>
               <p style={{ fontSize: '0.875rem', marginTop: '0.5rem', opacity: 0.8 }}>
-                {isPremium ? '全ての機能が無制限に利用可能です。' : '100件まで登録可能です。'}
+                {isPro ? 'FoodLabel Pro連携・拠点数拡張・高度なエクスポート機能など、全ての機能が利用可能です。' : isPremium ? 'ロケーション管理・カスタム項目・広告なしが利用可能です。' : '基本機能を無料でご利用いただけます。'}
               </p>
             </div>
-            {!isPremium ? (
-              <button onClick={handleUpgrade} className="btn btn-primary" disabled={checkoutLoading}>
-                {checkoutLoading ? <Loader2 className="animate-spin" size={18} /> : <Sparkles size={18} />}
-                アップグレード
+            {isPro ? (
+              <button onClick={handlePortal} className="btn btnSecondary" disabled={portalLoading} style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none' }}>
+                {portalLoading ? <Loader2 className="animate-spin" size={18} /> : <CheckCircle size={18} />}
+                お支払い管理・解約
               </button>
             ) : (
-              <CheckCircle size={32} />
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                {!isPremium && (
+                  <button onClick={() => handleUpgrade('premium')} className="btn btn-primary" disabled={checkoutLoading}>
+                    {checkoutLoading ? <Loader2 className="animate-spin" size={18} /> : <Sparkles size={18} />}
+                    スタンダードへ
+                  </button>
+                )}
+                <button onClick={() => handleUpgrade('pro')} className="btn btn-primary" disabled={checkoutLoading} style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)' }}>
+                  {checkoutLoading ? <Loader2 className="animate-spin" size={18} /> : <Sparkles size={18} />}
+                  プロへ（FoodLabel Pro連携）
+                </button>
+                {isPremium && (
+                  <button onClick={handlePortal} className="btn btnSecondary" disabled={portalLoading}>
+                    {portalLoading ? <Loader2 className="animate-spin" size={18} /> : <CheckCircle size={18} />}
+                    お支払い管理・解約
+                  </button>
+                )}
+              </div>
             )}
           </div>
         </section>
@@ -230,6 +278,34 @@ export default function SettingsPage() {
             </label>
           </div>
           <p className="helpText" style={{ marginTop: '0.5rem' }}>選択した業態に合わせてアプリのメニューや機能が最適化されます。（両方ONも可能）</p>
+          {settings.businessTypes?.manufacturing && (
+            isPro ? (
+              <div style={{ margin: '1rem 0 0 2.5rem', padding: '1rem', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
+                <label className="label" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#6b7280' }}>FoodLabel Pro連携用APIキー</label>
+                <input
+                  type="text"
+                  value={settings.foodlabelApiKey || ''}
+                  onChange={(e) => setSettings({ ...settings, foodlabelApiKey: e.target.value.trim() })}
+                  placeholder="FoodLabel Proの設定画面で発行したAPIキーを貼り付け"
+                  className="input"
+                  style={{ width: '100%', marginTop: '0.25rem', fontFamily: 'monospace', boxSizing: 'border-box' }}
+                />
+                <p className="helpText" style={{ marginTop: '0.25rem' }}>
+                  FoodLabel Pro（レシピ管理アプリ）の設定画面で「在庫アプリ連携用APIキー」を発行し、ここに貼り付けてください。設定すると「製造・仕込」ページでご自身のレシピだけが表示されます。
+                </p>
+              </div>
+            ) : (
+              <div style={{ margin: '1rem 0 0 2.5rem', padding: '1rem', background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '8px', display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+                <AlertCircle size={18} color="#ea580c" style={{ marginTop: '0.1rem', flexShrink: 0 }} />
+                <div>
+                  <strong style={{ color: '#9a3412', display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem' }}>FoodLabel Pro連携はプロプラン限定機能です</strong>
+                  <span style={{ fontSize: '0.8rem', color: '#7c2d12', display: 'block', lineHeight: '1.5' }}>
+                    「製造・仕込」ページでレシピに応じた在庫の自動減算をご利用いただくには、プロプランへのアップグレードが必要です。
+                  </span>
+                </div>
+              </div>
+            )
+          )}
         </section>
 
         <section className="settingsSection">

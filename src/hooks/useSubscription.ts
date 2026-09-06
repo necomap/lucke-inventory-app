@@ -3,7 +3,8 @@ import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
 
-export type PlanType = 'free' | 'premium';
+// 2026-09更新: proプラン新設のため型を拡張
+export type PlanType = 'free' | 'premium' | 'pro';
 
 export function useSubscription() {
   const { user } = useAuth();
@@ -30,7 +31,11 @@ export function useSubscription() {
     return () => unsubscribe();
   }, [user]);
 
-  const isPremium = plan === 'premium';
+  // isPremium: 「premium以上」（premium・pro両方）を指す。既存の呼び出し元
+  // （設定画面のカスタム項目・拠点管理セクションなど）はこれまで通り
+  // 「無料プランではない」を意味するものとして使い続けられる。
+  const isPremium = plan === 'premium' || plan === 'pro';
+  const isPro = plan === 'pro';
 
-  return { plan, isPremium, loading };
+  return { plan, isPremium, isPro, loading };
 }

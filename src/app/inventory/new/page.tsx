@@ -128,7 +128,7 @@ export default function NewItemPage() {
             <Lock size={18} /> 登録上限に達しました
           </h3>
           <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>
-            無料プランでは100件までしか登録できません。プレミアムプランへアップグレードすると無制限に登録可能になります。
+            無料プランでは100件までしか登録できません。スタンダードプランへアップグレードすると無制限に登録可能になります。
           </p>
           <button onClick={() => router.push('/settings')} className="btn btn-primary" style={{ marginTop: '1rem' }}>
             <Sparkles size={18} /> アップグレードする
