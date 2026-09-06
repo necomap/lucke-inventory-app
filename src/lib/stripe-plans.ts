@@ -5,9 +5,9 @@
 // price_dataでその場で価格を組み立てる方式を既存踏襲している（app/api/checkout/route.ts）。
 // そのため「価格ID→プラン」の対応表ではなく、「プランキー→表示名・金額」の対応表として持つ。
 //
-// 2026-09: premium(スタンダード)は月額¥980に決定（まだ実際の課金は始まっていない状態からの
-// 初回設定。price_data方式のためStripeダッシュボード側の作業は不要、この数値のみで確定する）。
-// proは金額まだ相談中のため暫定値のまま。
+// 2026-09: premium(スタンダード)は月額¥980、pro(プロ)は月額¥2,980に確定
+//（いずれも実際の課金が始まっていない状態からの初回設定。price_data方式のため
+// Stripeダッシュボード側の作業は不要、この数値のみで確定する）。
 export type PaidPlan = 'premium' | 'pro';
 
 export const PAID_PLANS: PaidPlan[] = ['premium', 'pro'];
@@ -23,10 +23,10 @@ export const PLAN_PRICING: Record<PaidPlan, { name: string; description: string;
     unitAmount: 980, // 円/月（2026-09確定）
   },
   pro: {
-    // 2026-09新設・暫定価格（要相談）: foodlabel-pro連携（自動在庫減算）・拠点数拡張・
+    // 2026-09新設: foodlabel-pro連携（自動在庫減算）・拠点数拡張・
     // 高度なエクスポート/分析機能などを含む上位プラン。
     name: 'Lucke Inventory プロプラン',
     description: 'FoodLabel Pro連携（製造・仕込の自動在庫減算）、拠点数拡張、高度なエクスポート・分析機能',
-    unitAmount: 2980, // 円/月（暫定値・要相談）
+    unitAmount: 2980, // 円/月（2026-09確定）
   },
 };

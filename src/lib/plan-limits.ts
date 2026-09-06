@@ -3,7 +3,8 @@
 // 2026-09新設: foodlabel-pro（lib/plan-limits.ts）と同じ考え方で、プランごとの
 // 機能フラグ・上限を1ファイルに集約する。
 //
-// 価格・具体的な上限値（maxItems/maxLocations等）はまだユーザーと相談中の暫定値。
+// 価格（premium ¥980 / pro ¥2,980）は2026-09に確定済み（lib/stripe-plans.ts参照）。
+// 一方、具体的な上限値（maxItems/maxLocations等）はまだ暫定値のまま。
 // 決定済みなのは「foodlabel-pro連携（製造・仕込でのレシピ自動取得）はproプラン限定」
 // という部分のみ。それ以外のitems/locations上限は現状どのプランでも実質無制限の
 // ままにしてある（今のアプリに数量上限を強制する仕組みがまだ無いため、ここで
