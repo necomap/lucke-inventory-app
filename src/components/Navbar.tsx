@@ -1,14 +1,16 @@
 'use client';
 
 import Link from 'next/link';
-import { Package, ScanLine, Settings, User, LogOut, BarChart3, Factory, HelpCircle } from 'lucide-react';
+import { Package, ScanLine, Settings, User, LogOut, BarChart3, Factory, HelpCircle, ClipboardList } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useInventorySettings } from '@/hooks/useInventorySettings';
+import { useSubscription } from '@/hooks/useSubscription';
 import './Navbar.css';
 
 export default function Navbar() {
   const { user, logout, loading } = useAuth();
   const { settings } = useInventorySettings();
+  const { isPro } = useSubscription();
 
   return (
     <nav className="navbar glass-panel">
@@ -38,6 +40,10 @@ export default function Navbar() {
               <Link href="/scan" className="nav-link scan-btn">
                 <ScanLine size={18} />
                 <span>棚卸し</span>
+              </Link>
+              <Link href="/inventory/stocktake" className="nav-link">
+                <ClipboardList size={18} />
+                <span>本格棚卸{!isPro && <span className="pro-badge">PRO</span>}</span>
               </Link>
               <Link href="/settings" className="nav-link">
                 <Settings size={18} />

@@ -1,15 +1,21 @@
 'use client';
 
 import React, { useState, useEffect, use } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useInventorySettings } from '@/hooks/useInventorySettings';
 import { db, storage } from '@/lib/firebase';
-import { doc, getDoc, updateDoc, deleteDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, deleteDoc, addDoc, collection, serverTimestamp, getDocs, query, where } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { Camera, Barcode, Save, X, Loader2, Lock, Truck, Trash2 } from 'lucide-react';
+import {
+  Camera, Barcode, Save, X, Loader2, Lock, Truck, Trash2,
+  Package, Wand2, Tag, Boxes, MapPin, StickyNote, Wallet, Printer,
+} from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
+import { generateUniqueInternalBarcode } from '@/lib/barcode';
+import BarcodeSVG from '@/components/BarcodeSVG';
 import '../../new/inventory-form.css';
 
 export default function EditItemPage({ params }: { params: Promise<{ id: string }> }) {
@@ -18,11 +24,12 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
   const { isPremium } = useSubscription();
   const { settings } = useInventorySettings();
   const router = useRouter();
-  
+
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [generatingBarcode, setGeneratingBarcode] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -85,6 +92,24 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
     }
   };
 
+  // 2026-09新設: バーコードが無い商品のためのバーコード自動発行（新規登録フォームと同じ仕組み）。
+  const handleGenerateBarcode = async () => {
+    if (!user) return;
+    setGeneratingBarcode(true);
+    try {
+      const q = query(collection(db, 'items'), where('userId', '==', user.uid));
+      const snap = await getDocs(q);
+      const existing = snap.docs.map(d => String(d.data().barcode || ''));
+      const code = generateUniqueInternalBarcode(existing);
+      setFormData(prev => ({ ...prev, barcode: code }));
+    } catch (error) {
+      console.error('Barcode generation error:', error);
+      alert('バーコードの発行に失敗しました。');
+    } finally {
+      setGeneratingBarcode(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -101,7 +126,7 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
       const itemRef = doc(db, 'items', id);
       const updateData = {
         ...formData,
-        location: isPremium ? formData.location : '', 
+        location: isPremium ? formData.location : '',
         imageUrl: imageUrl || '',
         lastUpdated: serverTimestamp(),
         updatedBy: user.displayName || user.email || 'Unknown',
@@ -155,173 +180,222 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
   return (
     <div className="formContainer">
       <div className="formHeader">
-        <h1>商品情報の編集</h1>
+        <h1><Package size={24} /> 商品情報の編集</h1>
         <button onClick={() => router.back()} className="btn btnSecondary">
           <X size={18} />
           キャンセル
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="glass-panel" style={{ padding: '2rem' }}>
-        <div className="formGrid">
-          <div className="formGroup fullWidth">
-            <label className="label">商品画像</label>
-            <div className="imageUpload" onClick={() => document.getElementById('imageInput')?.click()}>
-              {imagePreview ? (
-                <img src={imagePreview} alt="Preview" className="previewImage" />
-              ) : (
-                <>
-                  <Camera size={32} color="var(--text-muted)" />
-                  <span className="label">クリックして画像をアップロード</span>
-                </>
-              )}
-              <input 
-                id="imageInput" 
-                type="file" 
-                accept="image/*" 
-                onChange={handleImageChange} 
-                style={{ display: 'none' }} 
-              />
-            </div>
-          </div>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
-          <div className="formGroup fullWidth">
-            <label className="label">商品名 *</label>
-            <input 
-              type="text" 
-              name="name" 
-              value={formData.name} 
-              onChange={handleInputChange} 
-              className="input" 
-              required 
-            />
-          </div>
-
-          <div className="formGroup">
-            <label className="label">バーコード / QRコード</label>
-            <div className="barcodeWrapper">
-              <input 
-                type="text" 
-                name="barcode" 
-                value={formData.barcode} 
-                onChange={handleInputChange} 
-                className="input" 
-                style={{ flex: 1 }}
-              />
-              <button type="button" className="barcodeBtn">
-                <Barcode size={18} />
-              </button>
-            </div>
-          </div>
-
-          <div className="formGroup">
-            <label className="label">カテゴリ</label>
-            <input 
-              type="text" 
-              name="category" 
-              value={formData.category} 
-              onChange={handleInputChange} 
-              className="input" 
-            />
-          </div>
-
-          <div className="formGroup">
-            <label className="label">単位</label>
-            <input 
-              type="text" 
-              name="unit" 
-              value={formData.unit} 
-              onChange={handleInputChange} 
-              className="input" 
-            />
-          </div>
-
-          {settings.enableHaccpFields && (
-            <div className="formGroup">
-              <label className="label">主な仕入先</label>
-              <div style={{ position: 'relative' }}>
-                <input 
-                  type="text" 
-                  name="supplierName" 
-                  value={formData.supplierName} 
-                  onChange={handleInputChange} 
-                  className="input" 
-                  style={{ width: '100%', paddingLeft: '2.5rem' }}
+        {/* 基本情報カード */}
+        <section className="glass-panel formSection">
+          <h2 className="sectionTitle"><Package size={18} /> 基本情報</h2>
+          <div className="formGrid">
+            <div className="formGroup fullWidth">
+              <label className="label">商品画像</label>
+              <div className="imageUpload" onClick={() => document.getElementById('imageInput')?.click()}>
+                {imagePreview ? (
+                  <img src={imagePreview} alt="Preview" className="previewImage" />
+                ) : (
+                  <>
+                    <Camera size={32} color="var(--text-muted)" />
+                    <span className="label">クリックして画像をアップロード</span>
+                  </>
+                )}
+                <input
+                  id="imageInput"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  style={{ display: 'none' }}
                 />
-                <Truck size={18} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
               </div>
             </div>
-          )}
 
-          <div className="formGroup">
-            <label className="label">状態</label>
-            <select name="status" value={formData.status} onChange={handleInputChange} className="select">
-              <option value="新品">新品</option>
-              <option value="中古">中古</option>
-              <option value="要修理">要修理</option>
-            </select>
-          </div>
-
-          <div className="formGroup" style={{ position: 'relative' }}>
-            <label className="label">保管場所 {!isPremium && <span style={{ color: 'var(--secondary-color)', fontSize: '0.7rem' }}>(スタンダード限定)</span>}</label>
-            <div style={{ position: 'relative' }}>
-              <input 
-                type="text" 
-                name="location" 
-                value={formData.location} 
-                onChange={handleInputChange} 
-                className="input" 
-                disabled={!isPremium}
-                style={{ width: '100%', paddingRight: !isPremium ? '2.5rem' : '0.75rem' }}
+            <div className="formGroup fullWidth">
+              <label className="label">商品名 *</label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                className="input"
+                required
               />
-              {!isPremium && <Lock size={16} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />}
+            </div>
+
+            <div className="formGroup">
+              <label className="label"><Tag size={14} /> カテゴリ</label>
+              <input
+                type="text"
+                name="category"
+                value={formData.category}
+                onChange={handleInputChange}
+                className="input"
+              />
+            </div>
+
+            <div className="formGroup">
+              <label className="label">単位</label>
+              <input
+                type="text"
+                name="unit"
+                value={formData.unit}
+                onChange={handleInputChange}
+                className="input"
+              />
+            </div>
+
+            <div className="formGroup">
+              <label className="label">状態</label>
+              <select name="status" value={formData.status} onChange={handleInputChange} className="select">
+                <option value="新品">新品</option>
+                <option value="中古">中古</option>
+                <option value="要修理">要修理</option>
+              </select>
             </div>
           </div>
+        </section>
 
-          <div className="formGroup">
-            <label className="label">最低在庫数 (アラート用)</label>
-            <input 
-              type="number" 
-              name="minStock" 
-              value={formData.minStock} 
-              onChange={handleInputChange} 
-              className="input" 
-            />
+        {/* バーコードカード */}
+        <section className="glass-panel formSection">
+          <h2 className="sectionTitle"><Barcode size={18} /> バーコード</h2>
+          <p className="sectionHint">
+            バーコードが無い商品は「自動発行」でこの場で新しいバーコードを発行できます。発行・変更後は
+            <Link href={`/inventory/labels?item=${id}`} className="inlineLink"> ラベル印刷ページ</Link>から印刷してください。
+          </p>
+          <div className="formGrid">
+            <div className="formGroup fullWidth">
+              <label className="label">バーコード / JANコード</label>
+              <div className="barcodeWrapper">
+                <input
+                  type="text"
+                  name="barcode"
+                  value={formData.barcode}
+                  onChange={handleInputChange}
+                  className="input"
+                  style={{ flex: 1 }}
+                />
+                <button
+                  type="button"
+                  className="barcodeBtn"
+                  onClick={handleGenerateBarcode}
+                  disabled={generatingBarcode}
+                  title="この商品専用のバーコードを自動発行する"
+                >
+                  {generatingBarcode ? <Loader2 size={18} className="animate-spin" /> : <Wand2 size={18} />}
+                  自動発行
+                </button>
+              </div>
+              {formData.barcode && (
+                <div className="barcodePreview">
+                  <BarcodeSVG value={formData.barcode} height={50} />
+                </div>
+              )}
+              {formData.barcode && (
+                <Link href={`/inventory/labels?item=${id}`} className="btn btnSecondary" style={{ alignSelf: 'flex-start', marginTop: '0.5rem' }}>
+                  <Printer size={16} /> ラベルを印刷する
+                </Link>
+              )}
+            </div>
           </div>
+        </section>
 
-          <div className="formGroup">
-            <label className="label">商品価格 / 販売単価 (円)</label>
-            <input 
-              type="number" 
-              name="unitPrice" 
-              value={formData.unitPrice} 
-              onChange={handleInputChange} 
-              className="input" 
-            />
+        {/* 在庫・価格カード */}
+        <section className="glass-panel formSection">
+          <h2 className="sectionTitle"><Boxes size={18} /> 在庫・価格</h2>
+          <div className="formGrid">
+            <div className="formGroup">
+              <label className="label">最低在庫数 (アラート用)</label>
+              <input
+                type="number"
+                name="minStock"
+                value={formData.minStock}
+                onChange={handleInputChange}
+                className="input"
+              />
+            </div>
+
+            <div className="formGroup">
+              <label className="label"><Wallet size={14} /> 商品価格 / 販売単価 (円)</label>
+              <input
+                type="number"
+                name="unitPrice"
+                value={formData.unitPrice}
+                onChange={handleInputChange}
+                className="input"
+              />
+            </div>
           </div>
+        </section>
 
-          <div className="formGroup fullWidth">
-            <label className="label">備考</label>
-            <textarea 
-              name="memo" 
-              value={formData.memo} 
-              onChange={handleInputChange} 
-              className="textarea" 
-              rows={3}
-            />
+        {/* 保管・仕入先カード */}
+        <section className="glass-panel formSection">
+          <h2 className="sectionTitle"><MapPin size={18} /> 保管・仕入先</h2>
+          <div className="formGrid">
+            <div className="formGroup" style={{ position: 'relative' }}>
+              <label className="label">保管場所 {!isPremium && <span style={{ color: 'var(--secondary-color)', fontSize: '0.7rem' }}>(スタンダード限定)</span>}</label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="text"
+                  name="location"
+                  value={formData.location}
+                  onChange={handleInputChange}
+                  className="input"
+                  disabled={!isPremium}
+                  style={{ width: '100%', paddingRight: !isPremium ? '2.5rem' : '0.75rem' }}
+                />
+                {!isPremium && <Lock size={16} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />}
+              </div>
+            </div>
+
+            {settings.enableHaccpFields && (
+              <div className="formGroup">
+                <label className="label">主な仕入先</label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="text"
+                    name="supplierName"
+                    value={formData.supplierName}
+                    onChange={handleInputChange}
+                    className="input"
+                    style={{ width: '100%', paddingLeft: '2.5rem' }}
+                  />
+                  <Truck size={18} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                </div>
+              </div>
+            )}
           </div>
-        </div>
+        </section>
 
-        <div className="formActions" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+        {/* 備考カード */}
+        <section className="glass-panel formSection">
+          <h2 className="sectionTitle"><StickyNote size={18} /> 備考</h2>
+          <div className="formGrid">
+            <div className="formGroup fullWidth">
+              <textarea
+                name="memo"
+                value={formData.memo}
+                onChange={handleInputChange}
+                className="textarea"
+                rows={3}
+              />
+            </div>
+          </div>
+        </section>
+
+        <div className="formActions" style={{ flexWrap: 'wrap' }}>
           <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={loading}>
             {loading ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
             変更を保存する
           </button>
           {settings.role === 'admin' && (
-            <button 
-              type="button" 
-              onClick={handleDelete} 
-              className="btn" 
+            <button
+              type="button"
+              onClick={handleDelete}
+              className="btn"
               style={{ background: '#ef4444', color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center', flex: 1 }}
               disabled={loading}
             >

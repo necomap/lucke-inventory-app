@@ -3,29 +3,30 @@
 import React, { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { db, storage } from '@/lib/firebase';
-import { 
-  doc, 
-  getDoc, 
-  collection, 
-  query, 
-  where, 
+import {
+  doc,
+  getDoc,
+  getDocs,
+  collection,
+  query,
+  where,
   onSnapshot,
   updateDoc,
   increment,
   addDoc,
-  serverTimestamp 
+  serverTimestamp
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { 
-  ArrowLeft, 
-  Edit, 
-  History, 
-  Package, 
-  MapPin, 
-  Tag, 
-  Barcode, 
-  ArrowUpCircle, 
-  ArrowDownCircle, 
+import {
+  ArrowLeft,
+  Edit,
+  History,
+  Package,
+  MapPin,
+  Tag,
+  Barcode,
+  ArrowUpCircle,
+  ArrowDownCircle,
   Calendar,
   User,
   Calculator,
@@ -35,13 +36,17 @@ import {
   Printer,
   Camera,
   Image as ImageIcon,
-  Loader2
+  Loader2,
+  Wand2
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { InventoryItem, StockTransaction } from '@/types/inventory';
 import { useAuth } from '@/context/AuthContext';
 import { useInventorySettings } from '@/hooks/useInventorySettings';
 import { calculateFIFO, calculateMovingAverage } from '@/lib/valuation';
+import { generateUniqueInternalBarcode } from '@/lib/barcode';
+import BarcodeSVG from '@/components/BarcodeSVG';
+import Link from 'next/link';
 import dayjs from 'dayjs';
 import './item-detail.css';
 
@@ -65,6 +70,7 @@ export default function ItemDetailPage({ params }: { params: Promise<{ id: strin
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showQR, setShowQR] = useState(false);
+  const [generatingBarcode, setGeneratingBarcode] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -172,6 +178,28 @@ export default function ItemDetailPage({ params }: { params: Promise<{ id: strin
       alert('画像のアップロードに失敗しました');
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  // 2026-09新設: この商品にバーコードが無い場合、社内利用可能なバーコードをその場で発行する。
+  const handleGenerateBarcode = async () => {
+    if (!user || !item) return;
+    setGeneratingBarcode(true);
+    try {
+      const q = query(collection(db, 'items'), where('userId', '==', user.uid));
+      const snap = await getDocs(q);
+      const existing = snap.docs.map(d => String(d.data().barcode || ''));
+      const code = generateUniqueInternalBarcode(existing);
+      await updateDoc(doc(db, 'items', id), {
+        barcode: code,
+        lastUpdated: serverTimestamp(),
+        updatedBy: user.displayName || user.email || 'Unknown',
+      });
+    } catch (error) {
+      console.error('Barcode generation error:', error);
+      alert('バーコードの発行に失敗しました。');
+    } finally {
+      setGeneratingBarcode(false);
     }
   };
 
@@ -343,18 +371,34 @@ export default function ItemDetailPage({ params }: { params: Promise<{ id: strin
             </div>
 
             <div style={{ marginTop: '2rem', borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}><QrCode size={18} /> QRコード</h3>
-                <button onClick={() => setShowQR(!showQR)} className="btn btnSecondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}>
-                  {showQR ? '隠す' : '表示する'}
-                </button>
-              </div>
-              {showQR && (
-                <div style={{ marginTop: '1rem', background: '#f8fafc', padding: '1.5rem', borderRadius: '8px', textAlign: 'center' }}>
-                  <QRCodeSVG value={item.barcode || item.id} size={150} />
-                  <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#64748b' }}>{item.barcode || item.id}</p>
-                  <button className="btn btnSecondary" style={{ marginTop: '1rem' }} onClick={() => window.print()}>
-                    <Printer size={16} /> 印刷する
+              <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0 0 1rem' }}><Barcode size={18} /> バーコードラベル</h3>
+
+              {item.barcode ? (
+                <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '8px', textAlign: 'center' }}>
+                  <BarcodeSVG value={item.barcode} height={60} />
+                  <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', marginTop: '1rem', flexWrap: 'wrap' }}>
+                    <Link href={`/inventory/labels?item=${item.id}`} className="btn btn-primary">
+                      <Printer size={16} /> ラベルを印刷する
+                    </Link>
+                    <button onClick={() => setShowQR(!showQR)} className="btn btnSecondary">
+                      <QrCode size={16} /> {showQR ? 'QRコードを隠す' : 'QRコードも表示'}
+                    </button>
+                  </div>
+                  {showQR && (
+                    <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px dashed #e2e8f0' }}>
+                      <QRCodeSVG value={item.barcode || item.id} size={130} />
+                      <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#64748b' }}>{item.barcode || item.id}</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', padding: '1.25rem', borderRadius: '8px', display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+                  <p style={{ margin: 0, fontSize: '0.875rem', color: '#7c2d12' }}>
+                    この商品にはバーコードが登録されていません。仕入れた商品にメーカーのバーコードが無い場合は、その場で発行できます。
+                  </p>
+                  <button onClick={handleGenerateBarcode} className="btn btn-primary" disabled={generatingBarcode} style={{ flexShrink: 0 }}>
+                    {generatingBarcode ? <Loader2 className="animate-spin" size={16} /> : <Wand2 size={16} />}
+                    バーコードを発行する
                   </button>
                 </div>
               )}

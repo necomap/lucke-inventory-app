@@ -88,3 +88,19 @@ a {
   margin: 0 auto;
   padding: 2rem;
 }
+
+/* 2026-09新設: 印刷時にナビバー・フッターを消し、印刷したい内容だけがきれいに出るようにする。
+   バーコード/QRラベルの印刷（商品詳細ページ・ラベル印刷ページ）で使用。 */
+@media print {
+  nav, footer {
+    display: none !important;
+  }
+  .main-container {
+    max-width: none;
+    padding: 0;
+    min-height: 0 !important;
+  }
+  body {
+    background: white;
+  }
+}

@@ -22,6 +22,7 @@ const FEATURES: Feature[] = [
   { label: '広告なし', free: false, premium: true, pro: true },
   { label: 'FoodLabel Pro連携（製造・仕込の自動在庫減算）', free: false, premium: false, pro: true },
   { label: '高度なエクスポート・分析機能', free: false, premium: false, pro: true },
+  { label: '本格棚卸セッション（未カウント一覧・差異レポート・履歴管理）', free: false, premium: false, pro: true },
 ];
 
 export default function UpgradePage() {

@@ -1,0 +1,198 @@
+.stocktakeContainer {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.stocktakeActiveCard,
+.stocktakeStartCard {
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+  border: 2px solid var(--primary-color);
+}
+
+.stocktakeProgressBar {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.stocktakeProgressFill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.stocktakeHistoryRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.stocktakeHistoryRow:hover {
+  transform: translateX(2px);
+}
+
+.stocktakeStatGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 600px) {
+  .stocktakeStatGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.stocktakeStatCard {
+  padding: 1.25rem;
+  text-align: center;
+}
+
+.stocktakeStatValue {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.stocktakeTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.stocktakeTable th,
+.stocktakeTable td {
+  padding: 0.65rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--glass-border);
+  white-space: nowrap;
+}
+
+.stocktakeTable th {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.stocktakeCountCard {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1.5rem;
+  border: 2px solid var(--primary-color);
+}
+
+.stocktakeTabBar {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.stocktakeListPanel {
+  padding: 0.5rem 1rem;
+  margin-bottom: 1.5rem;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.stocktakeListRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.85rem 0.25rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+}
+
+.stocktakeListRow:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.stocktakeSearchResultRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.stocktakeSearchResultRow:hover {
+  background: rgba(79, 70, 229, 0.08);
+}
+
+.stocktakeFooterActions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+/* カメラスキャン用（scan.cssと同等のスタイルを本ページ用に独立して定義） */
+.videoWrapper {
+  width: 100%;
+  aspect-ratio: 1/1;
+  position: relative;
+  overflow: hidden;
+  border-radius: 24px;
+  background: black;
+  box-shadow: var(--shadow-lg);
+}
+
+.scannerVideo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.scanOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 32px solid rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.scanTarget {
+  width: 220px;
+  height: 220px;
+  border: 4px solid var(--primary-color);
+  border-radius: 12px;
+  position: relative;
+}
+
+.scanTarget::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 10%;
+  right: 10%;
+  height: 2px;
+  background: var(--primary-color);
+  box-shadow: 0 0 8px var(--primary-color);
+  animation: stocktakeScanLine 2s infinite ease-in-out;
+}
+
+@keyframes stocktakeScanLine {
+  0%, 100% { transform: translateY(-90px); opacity: 0.2; }
+  50% { transform: translateY(90px); opacity: 1; }
+}

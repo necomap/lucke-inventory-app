@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
 import { collection, query, onSnapshot, addDoc, serverTimestamp, where } from 'firebase/firestore';
-import { Plus, Search, MapPin, Tag, AlertCircle, Package, Download, Upload, LayoutGrid, List } from 'lucide-react';
+import { Plus, Search, MapPin, Tag, AlertCircle, Package, Download, Upload, LayoutGrid, List, Printer, ClipboardList } from 'lucide-react';
 import { InventoryItem } from '@/types/inventory';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/context/AuthContext';
@@ -194,6 +194,13 @@ export default function InventoryListPage() {
               <Upload size={18} />
               <input type="file" accept=".csv" onChange={handleImportCSV} style={{ display: 'none' }} />
             </label>
+            <Link href="/inventory/labels" className="btn btnSecondary" title="バーコードラベルの発行・印刷" style={{ padding: '0.5rem' }}>
+              <Printer size={18} />
+            </Link>
+            <Link href="/inventory/stocktake" className="btn btnSecondary" title="棚卸セッション">
+              <ClipboardList size={18} />
+              棚卸
+            </Link>
             <Link href="/inventory/new" className="btn btn-primary">
               <Plus size={18} />
               新規登録
@@ -221,6 +228,23 @@ export default function InventoryListPage() {
           </div>
         </div>
       )}
+      {!loading && items.some(item => !item.barcode) && (
+        <div style={{ margin: '0 0 2rem 0', padding: '1rem 1.5rem', background: '#fff7ed', borderLeft: '4px solid #f59e0b', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <AlertCircle size={24} color="#f59e0b" style={{ flexShrink: 0 }} />
+            <div>
+              <h3 style={{ color: '#9a3412', margin: '0 0 0.25rem 0', fontSize: '1rem' }}>バーコード未登録の商品があります</h3>
+              <p style={{ color: '#7c2d12', margin: 0, fontSize: '0.875rem' }}>
+                {items.filter(item => !item.barcode).length}件の商品にバーコードがありません。まとめて発行・印刷できます。
+              </p>
+            </div>
+          </div>
+          <Link href="/inventory/labels" className="btn btn-primary" style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)', flexShrink: 0 }}>
+            <Printer size={16} /> ラベルを発行する
+          </Link>
+        </div>
+      )}
+
       {loading ? (
         <div style={{ textAlign: 'center', padding: '3rem' }}>読み込み中...</div>
       ) : filteredItems.length === 0 ? (

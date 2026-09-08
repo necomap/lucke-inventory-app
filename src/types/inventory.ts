@@ -69,11 +69,51 @@ export interface AuditLog {
   id: string;
   userId?: string; // マルチテナント対応
   action: 'CREATE' | 'UPDATE' | 'DELETE';
-  targetType: 'INVENTORY' | 'TRANSACTION' | 'SETTINGS';
+  targetType: 'INVENTORY' | 'TRANSACTION' | 'SETTINGS' | 'STOCKTAKE';
   targetId: string;
   userName: string;
   timestamp: any;
   details: string; // JSON文字列または詳細な説明
+}
+
+// ============================================================
+// 2026-09新設: バーコード棚卸（本格棚卸セッション）機能用の型定義
+// ============================================================
+
+export type StocktakeStatus = 'in_progress' | 'completed';
+
+export interface StocktakeSession {
+  id: string;
+  userId: string;
+  name: string; // 例: "棚卸 2026/09/08"
+  status: StocktakeStatus;
+  locationFilter?: string; // 指定拠点のみ対象にした場合の拠点名（未指定なら全商品対象）
+  startedAt: any; // Firestore Timestamp
+  startedBy: string; // スタッフ名
+  completedAt?: any;
+  completedBy?: string;
+  totalItems: number; // このセッションの対象商品数
+  countedItems: number; // カウント済み商品数
+  discrepancyItems: number; // 理論値とズレがあった商品数（確定後に確定値）
+  totalDiffValue?: number; // 差異の金額換算合計（確定後。商品単価×差分数量の合計。マイナス=棚卸ロス）
+}
+
+export interface StocktakeEntry {
+  id: string;
+  sessionId: string;
+  userId: string;
+  itemId: string;
+  itemName: string; // 商品名のスナップショット（後から商品名が変わっても棚卸時点の名前で表示するため）
+  barcode?: string;
+  unit: string;
+  category?: string;
+  location?: string;
+  unitPrice?: number;
+  expectedStock: number; // 棚卸開始時点の帳簿在庫（理論値）のスナップショット
+  countedStock: number | null; // 実際に数えた数（未カウントならnull）
+  diff: number | null; // countedStock - expectedStock（未カウントならnull）
+  countedAt?: any;
+  countedBy?: string;
 }
 
 export interface CustomFieldDefinition {

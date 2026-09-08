@@ -20,6 +20,10 @@ export const PLAN_LIMITS = {
     canUseFoodlabelSync: false,
     canUseAdvancedExport: false,
     hasAds: true,
+    // 2026-09新設: 本格棚卸セッション機能（未カウント一覧・差異レポート・履歴保存）。
+    // ユーザーとの相談によりproプラン限定機能とした。バーコードの自動発行・印刷自体は
+    // 基本機能として全プランで使える（商品登録・編集画面、商品詳細ページ側で提供）。
+    canUseStocktakeSessions: false,
   },
   premium: {
     maxLocations: 3,
@@ -28,6 +32,7 @@ export const PLAN_LIMITS = {
     canUseFoodlabelSync: false,
     canUseAdvancedExport: false,
     hasAds: false,
+    canUseStocktakeSessions: false,
   },
   pro: {
     maxLocations: 10,
@@ -35,6 +40,7 @@ export const PLAN_LIMITS = {
     canUseFoodlabelSync: true,
     canUseAdvancedExport: true,
     hasAds: false,
+    canUseStocktakeSessions: true,
   },
 } as const;
 
