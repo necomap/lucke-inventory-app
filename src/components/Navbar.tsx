@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { Package, ScanLine, Settings, User, LogOut, BarChart3, Factory, HelpCircle, ClipboardList } from 'lucide-react';
+import { Package, ScanLine, Settings, User, LogOut, BarChart3, Factory, HelpCircle, ClipboardList, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useInventorySettings } from '@/hooks/useInventorySettings';
 import { useSubscription } from '@/hooks/useSubscription';
+import { isAdminEmail } from '@/lib/admin-access';
 import './Navbar.css';
 
 export default function Navbar() {
@@ -53,6 +54,12 @@ export default function Navbar() {
                 <HelpCircle size={18} />
                 <span>よくある質問</span>
               </Link>
+              {isAdminEmail(user.email) && (
+                <Link href="/admin" className="nav-link">
+                  <ShieldCheck size={18} />
+                  <span>管理画面</span>
+                </Link>
+              )}
               <div className="user-section">
                 {user.photoURL ? (
                   <img src={user.photoURL} alt="profile" className="user-avatar" />

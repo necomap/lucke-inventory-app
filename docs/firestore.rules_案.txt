@@ -1,0 +1,64 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 共通関数: 自分のデータ（userIdフィールドが自分のuidと一致）かどうか
+    function isOwner() {
+      return request.auth != null && resource.data.userId == request.auth.uid;
+    }
+    function isOwnerOnCreate() {
+      return request.auth != null && request.resource.data.userId == request.auth.uid;
+    }
+
+    // ---- items（在庫商品）----
+    match /items/{docId} {
+      allow read, update, delete: if isOwner();
+      allow create: if isOwnerOnCreate();
+    }
+
+    // ---- transactions（入出庫履歴）----
+    match /transactions/{docId} {
+      allow read, update, delete: if isOwner();
+      allow create: if isOwnerOnCreate();
+    }
+
+    // ---- auditLogs（操作ログ）----
+    match /auditLogs/{docId} {
+      allow read: if isOwner();
+      allow create: if isOwnerOnCreate();
+      // 監査ログは後から書き換え・削除できないようにする
+      allow update, delete: if false;
+    }
+
+    // ---- stocktakeSessions（棚卸セッション）----
+    match /stocktakeSessions/{docId} {
+      allow read, update, delete: if isOwner();
+      allow create: if isOwnerOnCreate();
+    }
+
+    // ---- stocktakeEntries（棚卸の商品ごとの記録）----
+    match /stocktakeEntries/{docId} {
+      allow read, update, delete: if isOwner();
+      allow create: if isOwnerOnCreate();
+    }
+
+    // ---- settings（アプリ設定。ドキュメントIDが自分のuid）----
+    match /settings/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ---- users（プラン・契約情報。ドキュメントIDが自分のuid）----
+    // Stripeのwebhook（サーバー側・管理者権限のAdmin SDK）だけが書き込む想定のため、
+    // クライアントからの書き込みは許可しない（読み取りのみ許可）。
+    // ※Admin SDKはこのルール自体を経由しないので、webhookの動作には影響しません。
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if false;
+    }
+
+    // ---- 上記以外は全て拒否（将来コレクションが増えたときの安全策）----
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
