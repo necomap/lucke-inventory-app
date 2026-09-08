@@ -123,6 +123,59 @@
   font-weight: 700;
 }
 
+.labelsPrintOptions {
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.printLayoutChoices {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+
+@media (max-width: 600px) {
+  .printLayoutChoices {
+    grid-template-columns: 1fr;
+  }
+}
+
+.printLayoutChoice {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  border: 1px solid var(--glass-border);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.printLayoutChoice:hover {
+  border-color: var(--primary-color);
+}
+
+.printLayoutChoice.active {
+  border-color: var(--primary-color);
+  background: rgba(79, 70, 229, 0.05);
+}
+
+.printLayoutChoice input[type="radio"] {
+  margin-top: 0.2rem;
+  flex-shrink: 0;
+}
+
+.labelSizeChooser {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--glass-border);
+}
+
 .labelsActions {
   display: flex;
   gap: 1rem;
@@ -186,6 +239,44 @@
 @media (max-width: 700px) {
   .labelSheet {
     grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ラベルプリンター用: 1商品=1ページ、実寸のラベルサイズで印刷 */
+.labelSingleList {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+}
+
+.labelCardSingle {
+  border: 1px dashed #94a3b8;
+  border-radius: 2px;
+  padding: 2mm;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: white;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+@media print {
+  .labelSingleList {
+    gap: 0;
+  }
+  .labelCardSingle {
+    border: none;
+    page-break-after: always;
+    break-after: page;
+    margin: 0 auto;
+  }
+  .labelCardSingle:last-child {
+    page-break-after: auto;
+    break-after: auto;
   }
 }
 

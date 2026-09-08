@@ -6,18 +6,23 @@
 import { NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import { adminDb } from '@/lib/firebase-admin';
+import { verifyRequestUser } from '@/lib/verify-auth';
 
 export async function POST(req: Request) {
   try {
-    const { userId } = await req.json();
-    if (!userId) {
-      return NextResponse.json({ error: 'userIdが必要です' }, { status: 400 });
+    // 2026-09修正（重大なセキュリティ修正）: 以前はリクエストボディのuserIdをそのまま
+    // 信用しており、他人のuserIdを指定するだけで他人のStripeお客様ポータル
+    // （支払い方法の変更・解約ができる画面）のURLを取得できてしまっていた。
+    // ログイン中の本人からのリクエストであることをIDトークンで検証してから処理する。
+    const verifiedUid = await verifyRequestUser(req);
+    if (!verifiedUid) {
+      return NextResponse.json({ error: 'ログイン情報を確認できませんでした。再度ログインしてからお試しください。' }, { status: 401 });
     }
     if (!adminDb) {
       return NextResponse.json({ error: 'Firebase Admin DB is not initialized.' }, { status: 500 });
     }
 
-    const userSnap = await adminDb.collection('users').doc(userId).get();
+    const userSnap = await adminDb.collection('users').doc(verifiedUid).get();
     const stripeCustomerId = userSnap.exists ? (userSnap.data() as any)?.stripeCustomerId : null;
     if (!stripeCustomerId) {
       return NextResponse.json({ error: 'お支払い情報が見つかりませんでした。時間をおいて再度お試しください。' }, { status: 400 });

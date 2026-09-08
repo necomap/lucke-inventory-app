@@ -35,10 +35,13 @@ export default function UpgradePage() {
     if (!user) return;
     setLoadingPlan(targetPlan);
     try {
+      // 2026-09修正: サーバー側でユーザー本人か検証できるよう、IDトークンを一緒に送る
+      // （userIdは自己申告できてしまうため、サーバー側ではもう信用していない）。
+      const idToken = await user.getIdToken();
       const res = await fetch('/api/checkout', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.uid, email: user.email, plan: targetPlan }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+        body: JSON.stringify({ email: user.email, plan: targetPlan }),
       });
       const data = await res.json();
       if (data.url) {
@@ -58,10 +61,10 @@ export default function UpgradePage() {
     if (!user) return;
     setPortalLoading(true);
     try {
+      const idToken = await user.getIdToken();
       const res = await fetch('/api/portal', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.uid }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
       });
       const data = await res.json();
       if (data.url) {

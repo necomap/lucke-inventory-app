@@ -134,10 +134,12 @@ export default function SettingsPage() {
     if (!user) return;
     setPortalLoading(true);
     try {
+      // 2026-09修正: サーバー側でユーザー本人か検証できるよう、IDトークンを一緒に送る
+      // （userIdは自己申告できてしまうため、サーバー側ではもう信用していない）。
+      const idToken = await user.getIdToken();
       const res = await fetch('/api/portal', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.uid }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
       });
       const data = await res.json();
       if (data.url) {

@@ -9,8 +9,19 @@ import { collection, query, where, getDocs, writeBatch, doc, serverTimestamp } f
 import { InventoryItem } from '@/types/inventory';
 import { generateUniqueInternalBarcode } from '@/lib/barcode';
 import BarcodeSVG from '@/components/BarcodeSVG';
-import { ArrowLeft, Loader2, Wand2, Printer, CheckSquare, Square, Search, AlertTriangle, Package } from 'lucide-react';
+import { ArrowLeft, Loader2, Wand2, Printer, CheckSquare, Square, Search, AlertTriangle, Package, Layers, Tag as TagIcon } from 'lucide-react';
+import '../new/inventory-form.css';
 import './labels.css';
+
+// 2026-09新設: ラベルプリンター（Brother QLシリーズなど、1枚ずつロール紙に印刷するタイプ）向けの
+// よくあるラベルサイズのプリセット。「サイズを指定する」を選ぶと任意のmm指定も可能。
+const LABEL_PRESETS = [
+  { key: 'ql62x29', label: '62×29mm（Brother QL標準ラベルなど）', width: 62, height: 29 },
+  { key: 'ql62x100', label: '62×100mm（Brother QL大型ラベルなど）', width: 62, height: 100 },
+  { key: '50x30', label: '50×30mm（汎用小型ラベル）', width: 50, height: 30 },
+  { key: '29x90', label: '29×90mm（縦長ラベル）', width: 29, height: 90 },
+  { key: 'custom', label: 'サイズを指定する...', width: 0, height: 0 },
+] as const;
 
 function LabelsPageInner() {
   const { user } = useAuth();
@@ -22,6 +33,10 @@ function LabelsPageInner() {
   const [searchTerm, setSearchTerm] = useState('');
   const [issuing, setIssuing] = useState(false);
   const [mode, setMode] = useState<'select' | 'print'>('select');
+  const [printLayout, setPrintLayout] = useState<'sheet' | 'label'>('sheet');
+  const [labelPresetKey, setLabelPresetKey] = useState<typeof LABEL_PRESETS[number]['key']>('ql62x29');
+  const [customWidth, setCustomWidth] = useState(50);
+  const [customHeight, setCustomHeight] = useState(30);
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -119,6 +134,11 @@ function LabelsPageInner() {
   const selectedItems = items.filter(i => selected.has(i.id));
   const printableItems = selectedItems.filter(i => i.barcode);
 
+  const selectedPreset = LABEL_PRESETS.find(p => p.key === labelPresetKey) || LABEL_PRESETS[0];
+  const labelWidthMm = labelPresetKey === 'custom' ? customWidth : selectedPreset.width;
+  const labelHeightMm = labelPresetKey === 'custom' ? customHeight : selectedPreset.height;
+  const labelSizeValid = labelWidthMm > 0 && labelHeightMm > 0;
+
   if (loading) return <div style={{ textAlign: 'center', padding: '4rem' }}><Loader2 className="animate-spin" /> 読み込み中...</div>;
 
   if (mode === 'print') {
@@ -128,22 +148,50 @@ function LabelsPageInner() {
           <button onClick={() => setMode('select')} className="btn btnSecondary">
             <ArrowLeft size={18} /> 選択画面に戻る
           </button>
-          <button onClick={() => window.print()} className="btn btn-primary">
+          <button onClick={() => window.print()} className="btn btn-primary" disabled={printLayout === 'label' && !labelSizeValid}>
             <Printer size={18} /> 印刷する
           </button>
         </div>
-        <p className="noPrint" style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1rem' }}>
-          A4用紙にラベルを並べて印刷します。プリンターの設定で「余白なし」または「最小」を選ぶと、実寸に近いサイズで印刷できます。
-        </p>
-        <div className="labelSheet">
-          {printableItems.map(item => (
-            <div className="labelCard" key={item.id}>
-              <div className="labelName">{item.name}</div>
-              <BarcodeSVG value={item.barcode} height={45} barWidth={1.6} fontSize={12} />
-              {item.category && <div className="labelCategory">{item.category}</div>}
+
+        {printLayout === 'sheet' ? (
+          <>
+            <p className="noPrint" style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1rem' }}>
+              A4用紙にラベルを並べて印刷します。プリンターの設定で「余白なし」または「最小」を選ぶと、実寸に近いサイズで印刷できます。
+            </p>
+            <div className="labelSheet">
+              {printableItems.map(item => (
+                <div className="labelCard" key={item.id}>
+                  <div className="labelName">{item.name}</div>
+                  <BarcodeSVG value={item.barcode} height={45} barWidth={1.6} fontSize={12} />
+                  {item.category && <div className="labelCategory">{item.category}</div>}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </>
+        ) : (
+          <>
+            <p className="noPrint" style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1rem' }}>
+              ラベルプリンター（Brother QLシリーズなど、ロール紙に1枚ずつ印刷するタイプ）向けに、1商品につき1ページで印刷します。
+              印刷ダイアログの用紙サイズが自動でこのラベルの実寸（{labelWidthMm}mm × {labelHeightMm}mm）に近い設定になりますが、
+              プリンターのドライバーによっては用紙サイズを手動で合わせる必要がある場合があります。
+            </p>
+            {/* @page でこのページ全体の印刷用紙サイズをラベルの実寸に指定する */}
+            <style>{`@media print { @page { size: ${labelWidthMm}mm ${labelHeightMm}mm; margin: 0; } }`}</style>
+            <div className="labelSingleList">
+              {printableItems.map(item => (
+                <div
+                  className="labelCardSingle"
+                  key={item.id}
+                  style={{ width: `${labelWidthMm}mm`, height: `${labelHeightMm}mm` }}
+                >
+                  <div className="labelName">{item.name}</div>
+                  <BarcodeSVG value={item.barcode} height={Math.max(24, labelHeightMm * 1.1)} barWidth={1.4} fontSize={11} />
+                  {item.category && <div className="labelCategory">{item.category}</div>}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     );
   }
@@ -223,6 +271,51 @@ function LabelsPageInner() {
         )}
       </div>
 
+      <div className="glass-panel labelsPrintOptions">
+        <h2 className="sectionTitle" style={{ fontSize: '0.95rem' }}><Layers size={16} /> 印刷方法</h2>
+        <div className="printLayoutChoices">
+          <label className={`printLayoutChoice ${printLayout === 'sheet' ? 'active' : ''}`}>
+            <input type="radio" name="printLayout" checked={printLayout === 'sheet'} onChange={() => setPrintLayout('sheet')} />
+            <div>
+              <div style={{ fontWeight: 700 }}>A4用紙にまとめて印刷</div>
+              <div className="label" style={{ fontSize: '0.75rem' }}>家庭用・オフィス用プリンターでシール用紙などに複数枚まとめて印刷</div>
+            </div>
+          </label>
+          <label className={`printLayoutChoice ${printLayout === 'label' ? 'active' : ''}`}>
+            <input type="radio" name="printLayout" checked={printLayout === 'label'} onChange={() => setPrintLayout('label')} />
+            <div>
+              <div style={{ fontWeight: 700 }}><TagIcon size={14} style={{ verticalAlign: 'middle', marginRight: '0.25rem' }} />ラベルプリンターで1枚ずつ印刷</div>
+              <div className="label" style={{ fontSize: '0.75rem' }}>Brother QLシリーズなど、ロール紙に1枚ずつ印刷するラベルプリンター向け</div>
+            </div>
+          </label>
+        </div>
+
+        {printLayout === 'label' && (
+          <div className="labelSizeChooser">
+            <div className="formGroup">
+              <label className="label">ラベルサイズ</label>
+              <select className="select" value={labelPresetKey} onChange={e => setLabelPresetKey(e.target.value as typeof labelPresetKey)}>
+                {LABEL_PRESETS.map(p => (
+                  <option key={p.key} value={p.key}>{p.label}</option>
+                ))}
+              </select>
+            </div>
+            {labelPresetKey === 'custom' && (
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <div className="formGroup">
+                  <label className="label">幅 (mm)</label>
+                  <input type="number" min={10} className="input" value={customWidth} onChange={e => setCustomWidth(Number(e.target.value))} />
+                </div>
+                <div className="formGroup">
+                  <label className="label">高さ (mm)</label>
+                  <input type="number" min={10} className="input" value={customHeight} onChange={e => setCustomHeight(Number(e.target.value))} />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       <div className="labelsActions">
         <button
           className="btn btn-primary"
@@ -235,7 +328,7 @@ function LabelsPageInner() {
         <button
           className="btn btnSecondary"
           onClick={() => setMode('print')}
-          disabled={printableItems.length === 0}
+          disabled={printableItems.length === 0 || (printLayout === 'label' && !labelSizeValid)}
         >
           <Printer size={18} /> 選択した商品のラベルを印刷する ({printableItems.length}件)
         </button>

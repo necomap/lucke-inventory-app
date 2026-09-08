@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useZxing } from 'react-zxing';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, doc, updateDoc, increment, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -14,7 +14,7 @@ import './scan.css';
 
 export default function ScanPage() {
   const { user } = useAuth();
-  const { isPremium } = useSubscription();
+  const { isPremium, isPro } = useSubscription();
   const { playSuccessSound, triggerVibration } = useInventorySettings();
   const [result, setResult] = useState<string | null>(null);
   const [foundItem, setFoundItem] = useState<InventoryItem | null>(null);
@@ -23,6 +23,12 @@ export default function ScanPage() {
   const [scanMode, setScanMode] = useState<'barcode' | 'ocr' | 'stocktake'>('barcode');
   const [ocrResult, setOcrResult] = useState<any | null>(null);
   const [actualCount, setActualCount] = useState<number | string>('');
+
+  // プラン判定が非同期で読み込まれる／解約などでプランが変わった場合に備えて、
+  // 権限の無いモードの画面が表示されたままにならないようにする（描画時に判定するため
+  // setStateを伴うeffectは不要）。
+  const effectiveScanMode: 'barcode' | 'stocktake' | 'ocr' =
+    (scanMode === 'ocr' && !isPro) || (scanMode === 'stocktake' && !isPremium) ? 'barcode' : scanMode;
 
   const { ref } = useZxing({
     onResult(res) {
@@ -53,7 +59,7 @@ export default function ScanPage() {
         if (itemDoc) {
           const item = { id: itemDoc.id, ...itemDoc.data() } as InventoryItem;
           setFoundItem(item);
-          if (scanMode === 'stocktake') {
+          if (effectiveScanMode === 'stocktake') {
             setActualCount(item.currentStock);
           }
         } else {
@@ -184,33 +190,42 @@ export default function ScanPage() {
         
         {isPremium && (
           <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginTop: '1rem', flexWrap: 'wrap' }}>
-            <button 
-              className={`btn ${scanMode === 'barcode' ? 'btn-primary' : 'btnSecondary'}`}
+            <button
+              className={`btn ${effectiveScanMode === 'barcode' ? 'btn-primary' : 'btnSecondary'}`}
               onClick={() => setScanMode('barcode')}
             >
               <ScanLine size={18} /> 入出庫
             </button>
-            <button 
-              className={`btn ${scanMode === 'stocktake' ? 'btn-primary' : 'btnSecondary'}`}
+            <button
+              className={`btn ${effectiveScanMode === 'stocktake' ? 'btn-primary' : 'btnSecondary'}`}
               onClick={() => setScanMode('stocktake')}
             >
               <ClipboardList size={18} /> 棚卸
             </button>
-            <button 
-              className={`btn ${scanMode === 'ocr' ? 'btn-primary' : 'btnSecondary'}`}
-              onClick={() => setScanMode('ocr')}
-            >
-              <FileText size={18} /> 納品書
-            </button>
+            {/* 2026-09修正: 納品書AI解析(OCR)はプロプラン限定機能（取扱マニュアル記載どおり）。
+                以前はプレミアムプランでもこのボタンが表示され、実際に押すとモックのOCR結果が
+                そのまま使えてしまっていた（プラン制限が効いていなかった）ため、isProで絞り込む。 */}
+            {isPro ? (
+              <button
+                className={`btn ${effectiveScanMode === 'ocr' ? 'btn-primary' : 'btnSecondary'}`}
+                onClick={() => setScanMode('ocr')}
+              >
+                <FileText size={18} /> 納品書
+              </button>
+            ) : (
+              <Link href="/upgrade" className="btn btnSecondary" title="納品書AI解析はプロプラン限定機能です">
+                <FileText size={18} /> 納品書 <span className="pro-badge">PRO</span>
+              </Link>
+            )}
           </div>
         )}
 
         <p className="label" style={{ marginTop: '1rem' }}>
-          {scanMode === 'ocr' ? '納品書やレシートを撮影してください' : '枠の中にバーコードを合わせてください'}
+          {effectiveScanMode === 'ocr' ? '納品書やレシートを撮影してください' : '枠の中にバーコードを合わせてください'}
         </p>
       </div>
 
-      {(scanMode === 'barcode' || scanMode === 'stocktake') ? (
+      {(effectiveScanMode === 'barcode' || effectiveScanMode === 'stocktake') ? (
         <div className="videoWrapper">
           <video ref={ref} className="scannerVideo" />
           <div className="scanOverlay">
@@ -228,9 +243,9 @@ export default function ScanPage() {
         </div>
       )}
 
-      {loading && (scanMode === 'barcode' || scanMode === 'stocktake') && <div className="glass-panel" style={{ padding: '1.5rem' }}><Loader2 className="animate-spin" /></div>}
+      {loading && (effectiveScanMode === 'barcode' || effectiveScanMode === 'stocktake') && <div className="glass-panel" style={{ padding: '1.5rem' }}><Loader2 className="animate-spin" /></div>}
 
-      {result && !loading && (scanMode === 'barcode' || scanMode === 'stocktake') && (
+      {result && !loading && (effectiveScanMode === 'barcode' || effectiveScanMode === 'stocktake') && (
         <div className="scanResultCard glass-panel">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <span className="label">スキャン結果: {result}</span>
@@ -253,7 +268,7 @@ export default function ScanPage() {
                 </div>
               </div>
 
-              {scanMode === 'barcode' && (
+              {effectiveScanMode === 'barcode' && (
                 <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem' }}>
                   <button 
                     onClick={() => handleQuickAdjust('in')} 
@@ -274,7 +289,7 @@ export default function ScanPage() {
                 </div>
               )}
 
-              {scanMode === 'stocktake' && (
+              {effectiveScanMode === 'stocktake' && (
                 <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
                   <label style={{ display: 'block', fontSize: '0.875rem', color: '#64748b', marginBottom: '0.5rem' }}>実際に数えた数（実数）を入力</label>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -311,7 +326,7 @@ export default function ScanPage() {
         </div>
       )}
 
-      {ocrResult && scanMode === 'ocr' && !loading && (
+      {ocrResult && effectiveScanMode === 'ocr' && !loading && (
         <div className="scanResultCard glass-panel">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
             <h3 style={{ margin: 0, color: '#334155' }}>AI読取結果</h3>
