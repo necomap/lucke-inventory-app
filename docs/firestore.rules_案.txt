@@ -42,6 +42,13 @@ service cloud.firestore {
       allow create: if isOwnerOnCreate();
     }
 
+    // ---- suppliers（仕入先マスタ）----
+    // 2026-09新設: 発注書作成機能（/suppliers）用。他のコレクションと同じくisOwner系で保護。
+    match /suppliers/{docId} {
+      allow read, update, delete: if isOwner();
+      allow create: if isOwnerOnCreate();
+    }
+
     // ---- settings（アプリ設定。ドキュメントIDが自分のuid）----
     match /settings/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;

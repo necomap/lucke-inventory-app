@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Package, ScanLine, Settings, User, LogOut, BarChart3, Factory, HelpCircle, ClipboardList, ShieldCheck } from 'lucide-react';
+import { Package, ScanLine, Settings, User, LogOut, BarChart3, Factory, HelpCircle, ClipboardList, ShieldCheck, CalendarClock, Truck } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useInventorySettings } from '@/hooks/useInventorySettings';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -45,6 +45,16 @@ export default function Navbar() {
               <Link href="/inventory/stocktake" className="nav-link">
                 <ClipboardList size={18} />
                 <span>本格棚卸{!isPro && <span className="pro-badge">PRO</span>}</span>
+              </Link>
+              {settings?.enableHaccpFields && (
+                <Link href="/expiry" className="nav-link">
+                  <CalendarClock size={18} />
+                  <span>期限管理</span>
+                </Link>
+              )}
+              <Link href="/suppliers" className="nav-link">
+                <Truck size={18} />
+                <span>仕入先</span>
               </Link>
               <Link href="/settings" className="nav-link">
                 <Settings size={18} />

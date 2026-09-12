@@ -29,6 +29,7 @@ function NewItemPageInner() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [generatingBarcode, setGeneratingBarcode] = useState(false);
+  const [supplierNames, setSupplierNames] = useState<string[]>([]);
 
   // スキャン画面(/scan)で未登録バーコードを検出したときの「新規登録する」導線から
   // ?barcode=... 付きで遷移してきた場合、バーコード欄にあらかじめ入力しておく
@@ -56,6 +57,19 @@ function NewItemPageInner() {
     };
     fetchCount();
   }, []);
+
+  // 2026-09新設: 仕入先マスタ（/suppliers）に登録済みの名前を入力候補として出す。
+  // 発注書作成（/suppliers/[id]/order）はここの表記と完全一致で突き合わせるため、
+  // 候補から選んでもらうことで表記ゆれを防ぐ（自由入力自体はこれまで通り可能）。
+  useEffect(() => {
+    if (!user) return;
+    const fetchSuppliers = async () => {
+      const q = query(collection(db, 'suppliers'), where('userId', '==', user.uid));
+      const snap = await getDocs(q);
+      setSupplierNames(snap.docs.map((d) => (d.data().name as string) || '').filter(Boolean));
+    };
+    fetchSuppliers();
+  }, [user]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -364,9 +378,16 @@ function NewItemPageInner() {
                     className="input"
                     placeholder="例: ○○商事"
                     style={{ width: '100%', paddingLeft: '2.5rem' }}
+                    list="supplierNameList"
                   />
+                  <datalist id="supplierNameList">
+                    {supplierNames.map((n) => <option key={n} value={n} />)}
+                  </datalist>
                   <Truck size={18} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                 </div>
+                <p className="helpText" style={{ marginTop: '0.25rem' }}>
+                  <Link href="/suppliers" style={{ color: 'var(--primary-color)' }}>仕入先管理</Link>で登録した名前を選ぶと、発注書作成時にまとめて扱えます。
+                </p>
               </div>
             )}
 

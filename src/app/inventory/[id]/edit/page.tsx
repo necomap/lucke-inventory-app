@@ -30,6 +30,7 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [generatingBarcode, setGeneratingBarcode] = useState(false);
+  const [supplierNames, setSupplierNames] = useState<string[]>([]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -78,6 +79,17 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
 
     fetchItem();
   }, [id, router]);
+
+  // 2026-09新設: 仕入先マスタ（/suppliers）に登録済みの名前を入力候補として出す（new/page.tsxと同様）。
+  useEffect(() => {
+    if (!user) return;
+    const fetchSuppliers = async () => {
+      const q = query(collection(db, 'suppliers'), where('userId', '==', user.uid));
+      const snap = await getDocs(q);
+      setSupplierNames(snap.docs.map((d) => (d.data().name as string) || '').filter(Boolean));
+    };
+    fetchSuppliers();
+  }, [user]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -362,7 +374,11 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
                     onChange={handleInputChange}
                     className="input"
                     style={{ width: '100%', paddingLeft: '2.5rem' }}
+                    list="supplierNameList"
                   />
+                  <datalist id="supplierNameList">
+                    {supplierNames.map((n) => <option key={n} value={n} />)}
+                  </datalist>
                   <Truck size={18} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                 </div>
               </div>

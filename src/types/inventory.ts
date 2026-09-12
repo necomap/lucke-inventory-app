@@ -16,6 +16,22 @@ export interface InventoryItem {
   createdAt: any;
   updatedBy: string; // スタッフ名
   customFields?: Record<string, any>; // 独自項目用
+  supplierName?: string; // 主な仕入先（HACCP連携項目ON時、商品登録フォームで入力）
+}
+
+// 2026-09新設: 仕入先マスタ。
+// InventoryItem.supplierName（自由入力・既存データとの互換のため型のまま残す）と、
+// このSupplier.nameを完全一致（前後の空白を除く）で突き合わせて、発注書作成時に
+// 「どの仕入先から仕入れている商品か」をグルーピングする。
+export interface Supplier {
+  id: string;
+  userId?: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  memo?: string;
+  createdAt?: any;
 }
 
 export interface WarehouseLocation {

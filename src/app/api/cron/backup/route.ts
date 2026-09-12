@@ -24,7 +24,7 @@ import { adminDb } from '@/lib/firebase-admin';
 
 export const maxDuration = 60;
 
-const BACKUP_COLLECTIONS = ['items', 'transactions', 'stocktakeSessions', 'stocktakeEntries'] as const;
+const BACKUP_COLLECTIONS = ['items', 'transactions', 'stocktakeSessions', 'stocktakeEntries', 'suppliers'] as const;
 
 // BigIntが混ざっていてもJSON.stringifyが落ちないようにするreplacer。
 // このアプリでBigIntを使っている箇所は無いはずだが、FoodLabel Proの実装を踏襲し、
