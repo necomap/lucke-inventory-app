@@ -6,6 +6,7 @@ import {
   User,
   signOut as firebaseSignOut,
   GoogleAuthProvider,
+  signInWithPopup,
   signInWithRedirect,
   getRedirectResult,
   signInWithEmailAndPassword,
@@ -51,10 +52,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
+    setAuthError(null);
     try {
-      await signInWithRedirect(auth, provider);
+      // authDomain(lucke-inventory-app.firebaseapp.com)がアプリ本体のドメイン
+      // (inventory.lucke.jp)と別ドメインのため、signInWithRedirectだと
+      // ブラウザのサードパーティストレージ制限で認証結果を引き継げず、
+      // エラーも出ないままログイン画面に戻ってしまう不具合が確認された。
+      // まずポップアップ方式を試し、ポップアップがブロックされた場合や
+      // (主にスマホのアプリ内ブラウザ等で)ポップアップ自体が使えない場合のみ
+      // 従来のリダイレクト方式にフォールバックする。
+      await signInWithPopup(auth, provider);
     } catch (error) {
+      const code = (error as { code?: string })?.code;
+      if (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment') {
+        try {
+          await signInWithRedirect(auth, provider);
+          return;
+        } catch (redirectError) {
+          console.error('Error signing in with Google (redirect fallback):', redirectError);
+          const rCode = (redirectError as { code?: string; message?: string })?.code;
+          const rMessage = (redirectError as { code?: string; message?: string })?.message;
+          setAuthError(`Googleログインに失敗しました (${rCode || 'unknown'}): ${rMessage || redirectError}`);
+          throw redirectError;
+        }
+      }
+      // ユーザーが単にポップアップを閉じただけの場合はエラー表示しない
+      if (code === 'auth/cancelled-popup-request' || code === 'auth/popup-closed-by-user') {
+        return;
+      }
       console.error('Error signing in with Google:', error);
+      const message = (error as { message?: string })?.message;
+      setAuthError(`Googleログインに失敗しました (${code || 'unknown'}): ${message || error}`);
       throw error;
     }
   };
