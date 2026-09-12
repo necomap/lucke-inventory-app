@@ -51,6 +51,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signInWithGoogle = async () => {
+    // 2026-09-12 一時的な調査用ログ: 原因特定後に削除すること。
+    console.log('[auth] signInWithGoogle 開始');
     const provider = new GoogleAuthProvider();
     setAuthError(null);
     try {
@@ -61,8 +63,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // まずポップアップ方式を試し、ポップアップがブロックされた場合や
       // (主にスマホのアプリ内ブラウザ等で)ポップアップ自体が使えない場合のみ
       // 従来のリダイレクト方式にフォールバックする。
+      console.log('[auth] signInWithPopup を呼び出します', { authDomain: auth.config.authDomain, currentUrl: typeof window !== 'undefined' ? window.location.href : '' });
       await signInWithPopup(auth, provider);
+      console.log('[auth] signInWithPopup 成功');
     } catch (error) {
+      console.log('[auth] signInWithPopup が例外をスローしました', error);
       const code = (error as { code?: string })?.code;
       if (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment') {
         try {
