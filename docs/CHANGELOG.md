@@ -31,7 +31,8 @@ Webアプリのため「インストールマニュアル」を機能追加の�
 - Googleログイン（`signInWithPopup`）が、ブラウザのCross-Origin-Opener-Policy（COOP）によって永久に完了しない不具合を修正。`next.config.ts`に`Cross-Origin-Opener-Policy: same-origin-allow-popups`ヘッダーを明示的に設定し、自分が開いたポップアップの状態を確認できるようにした。
 - `signInWithGoogle`（`src/context/AuthContext.tsx`）を、まず`signInWithPopup`を試し、ポップアップがブロックされた場合のみ`signInWithRedirect`にフォールバックする方式に変更。失敗時はログイン画面にエラー内容を表示するようにした（以前はエラーが握りつぶされ、原因究明ができなかった）。
 - Firebase Hostingが一度も有効化されておらず、Googleログインの中継ページが参照する`/__/firebase/init.json`が404になっていた問題を修正（Firebase Hostingを最小構成で有効化。実際のアプリ配信は引き続きVercelで行う）。
-- 調査目的の一時的なconsole.logが`AuthContext.tsx`・`login/page.tsx`に残っている。原因確定後に削除予定。
+- 共有端末で複数のスタッフが同じブラウザを使う可能性があるため、`signInWithGoogle`に`provider.setCustomParameters({ prompt: 'select_account' })`を追加し、ブラウザに既存のGoogleセッションがあっても毎回アカウント選択画面を表示するようにした（アプリ自体のログインセッション保持には影響しない）。
+- 調査目的の一時的なconsole.logは削除済み。
 
 ### セキュリティ・重大な発覚事項
 **[要対応・ユーザー側の作業]** Vercelの環境変数`FIREBASE_SERVICE_ACCOUNT`（Firebase Admin SDKの認証情報）が**そもそも設定されていなかった**ことが判明した。これにより、Admin SDKに依存する以下のAPIが、これまで本番環境で正しく動作していなかった可能性が高い。
@@ -49,8 +50,9 @@ Webアプリのため「インストールマニュアル」を機能追加の�
 3. あわせて、課金画面（アップグレード・お支払い方法の変更）とHACCP連携（`/api/items`）が正常に動作することも確認する。
 
 ### 動作確認チェックリスト
-- [ ] `https://inventory.lucke.jp/login` でGoogleログインすると、ポップアップが開いてアカウント選択でき、ログインが完了する
-- [ ] `FIREBASE_SERVICE_ACCOUNT`設定・再デプロイ後、Cron Jobsから`/api/cron/backup`を手動実行してバックアップメールが届く
+- [x] `https://inventory.lucke.jp/login` でGoogleログインすると、ポップアップが開いてアカウント選択でき、ログインが完了する（2026-09-12確認済み）
+- [x] `FIREBASE_SERVICE_ACCOUNT`設定・再デプロイ後、Cron Jobsから`/api/cron/backup`を手動実行してバックアップメールが届く（2026-09-12確認済み）
+- [x] ブラウザに既存のGoogleセッションがあっても、ログインのたびにアカウント選択画面が表示される（2026-09-12確認済み）
 - [ ] 設定画面・アップグレード画面から正常にStripeのポータル・チェックアウトに遷移できる
 - [ ] HACCP側から`/api/items`が正常にデータを取得できる
 

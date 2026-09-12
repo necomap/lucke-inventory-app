@@ -119,8 +119,6 @@ export default function LoginPage() {
 
         <button
           onClick={() => {
-            // 2026-09-12 一時的な調査用ログ: 原因特定後に削除すること。
-            console.log('[login] Googleログインボタンがクリックされました');
             signInWithGoogle().catch((e) => {
               console.error('[login] signInWithGoogleが失敗しました:', e);
             });
