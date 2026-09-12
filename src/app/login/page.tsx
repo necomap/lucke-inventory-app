@@ -117,7 +117,16 @@ export default function LoginPage() {
           <div style={{ flex: 1, height: '1px', background: '#cbd5e1' }}></div>
         </div>
 
-        <button onClick={signInWithGoogle} className="googleBtn">
+        <button
+          onClick={() => {
+            // 2026-09-12 一時的な調査用ログ: 原因特定後に削除すること。
+            console.log('[login] Googleログインボタンがクリックされました');
+            signInWithGoogle().catch((e) => {
+              console.error('[login] signInWithGoogleが失敗しました:', e);
+            });
+          }}
+          className="googleBtn"
+        >
           <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="googleIcon" />
           Googleでログイン
         </button>
